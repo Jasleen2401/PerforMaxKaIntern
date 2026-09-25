@@ -11,10 +11,16 @@ const getStoredToken = (key: string) => {
 const accessToken = getStoredToken("accessToken");
 const refreshToken = getStoredToken("refreshToken");
 
-const storedUser = localStorage.getItem("user");
-const parsedUser = storedUser && storedUser !== "null" && storedUser !== "undefined"
-  ? JSON.parse(storedUser)
-  : null;
+let parsedUser = null;
+try {
+  const storedUser = localStorage.getItem("user");
+  if (storedUser && storedUser !== "null" && storedUser !== "undefined") {
+    parsedUser = JSON.parse(storedUser);
+  }
+} catch {
+  parsedUser = null;
+  try { localStorage.removeItem("user"); } catch {}
+}
 
 const initialState: AuthState = {
   user: parsedUser,

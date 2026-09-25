@@ -79,6 +79,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='goal',
-            constraint=models.CheckConstraint(condition=models.Q(('completion_percentage__gte', Decimal('0.00')), ('completion_percentage__lte', Decimal('100.00'))), name='goal_valid_completion_percentage'),
+            constraint=models.CheckConstraint(check=models.Q(('completion_percentage__gte', Decimal('0.00')), ('completion_percentage__lte', Decimal('100.00'))), name='goal_valid_completion_percentage'),
         ),
     ]

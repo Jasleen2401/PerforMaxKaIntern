@@ -85,22 +85,54 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-DB_NAME = os.getenv('DB_NAME', 'intern_pms_db')
-DB_USER = os.getenv('DB_USER', 'intern_pms_user')
-DB_PASSWORD = os.getenv('DB_PASSWORD', 'intern_pms_password')
-DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_PORT = os.getenv('DB_PORT', '5432')
+USE_SQLITE = os.getenv('USE_SQLITE', 'True').lower() in ('true', '1')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+
+    # Enable JSONField support on SQLite DatabaseFeatures
+    from django.db.backends.sqlite3.base import DatabaseFeatures
+    DatabaseFeatures.supports_json_field = True
+
+    # Add JSON_VALID support to SQLite for Django JSONField queries
+    import json
+    from django.db.backends.signals import connection_created
+    from django.dispatch import receiver
+
+    @receiver(connection_created)
+    def extend_sqlite(connection=None, **kwargs):
+        if connection and connection.vendor == 'sqlite':
+            def json_valid(val):
+                if val is None:
+                    return 1
+                try:
+                    json.loads(val)
+                    return 1
+                except Exception:
+                    return 0
+            connection.connection.create_function("JSON_VALID", 1, json_valid)
+else:
+    DB_NAME = os.getenv('DB_NAME', 'intern_pms_db')
+    DB_USER = os.getenv('DB_USER', 'intern_pms_user')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', 'intern_pms_password')
+    DB_HOST = os.getenv('DB_HOST', 'localhost')
+    DB_PORT = os.getenv('DB_PORT', '5432')
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
+        }
+    }
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'

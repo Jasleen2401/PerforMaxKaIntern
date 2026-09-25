@@ -51,7 +51,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Performance Cycle',
                 'verbose_name_plural': 'Performance Cycles',
                 'ordering': ['-start_date'],
-                'constraints': [models.CheckConstraint(condition=models.Q(('end_date__gte', models.F('start_date'))), name='cycle_end_date_gte_start_date')],
+                'constraints': [models.CheckConstraint(check=models.Q(('end_date__gte', models.F('start_date'))), name='cycle_end_date_gte_start_date')],
             },
         ),
     ]

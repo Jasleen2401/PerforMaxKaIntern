@@ -19,6 +19,56 @@ A production-quality, modular, end-to-end web platform engineered to streamline 
 
 ---
 
+## 📁 Sorted Architecture & Folder Directory Map
+
+The codebase is organized into modular, domain-isolated directories for immediate, intuitive navigation:
+
+```
+Performax/
+│
+├── workspaces/                   # 👥 Role-Based Workspaces (Fast Developer Access)
+│   ├── hr_workspace/             #    HR Partner: cycle setup, criteria, org reports
+│   ├── manager_workspace/        #    Manager: team reviews, goal assignment, PIPs
+│   ├── intern_workspace/         #    Intern: self-assessment, attendance, progress
+│   └── superadmin_workspace/     #    Super Admin: user management, roles, audit logs
+│
+├── backend/                      # ⚙️ Django REST API & Business Logic
+│   ├── config/                   #    Settings, URLs, JWT, SQLite/PostgreSQL fallback
+│   ├── apps/
+│   │   ├── hr/                   #    ⚡ Dedicated HR API views & endpoints
+│   │   ├── manager/              #    ⚡ Dedicated Manager API views & endpoints
+│   │   ├── intern/               #    ⚡ Dedicated Intern API views & endpoints
+│   │   ├── superadmin/           #    ⚡ Dedicated SuperAdmin API views & endpoints
+│   │   ├── accounts/             #    User model, JWT tokens, Email OTP
+│   │   ├── employees/            #    Employee profiles, mentors, hierarchy
+│   │   ├── performance/          #    Appraisal cycles, templates, scoring engine
+│   │   ├── goals/                #    SMART goals, KPIs, milestone tracking
+│   │   ├── evidence/             #    Proof uploads, manager approval workflow
+│   │   ├── feedback/             #    Continuous 360 feedback, comments
+│   │   ├── attendance/           #    Daily clock-in/out records
+│   │   ├── training/             #    Courses & employee enrollments
+│   │   ├── reports/              #    Analytics services & CSV exports
+│   │   └── audit/                #    Immutable audit trails
+│   └── seed_intern_pms.py        #    Realistic demo database seeder
+│
+├── epms_frontend/                # 🌐 React 18 + Vite + Tailwind Frontend
+│   └── src/
+│       ├── logins/               #    Role login hubs (admin, hr, manager, intern)
+│       ├── pages/                #    UI pages (admin/, appraisal/, kpi/, continuous/, pip/)
+│       ├── features/             #    Redux Toolkit state slices & RTK Query APIs
+│       └── components/           #    Reusable design system components
+│
+├── database/                     # 🗄️ Database Management
+│   ├── scripts/                  #    SQL maintenance & corruption recovery scripts
+│   └── README.md                 #    Schema design, ER diagram & commands
+│
+└── docs/                         # 📚 Architecture Specs & Plans
+    ├── plans/                    #    All 16 planning docs organized by domain
+    └── *.md                      #    System design, RBAC specs, and API docs
+```
+
+---
+
 ## 🛠 Technology Stack
 
 | Layer | Technologies |
