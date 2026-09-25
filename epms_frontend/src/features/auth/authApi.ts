@@ -17,7 +17,7 @@ export const authApi = api.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      transformResponse: (res: ApiResponse<AuthResponse>) => res.data,
+      transformResponse: (res: any) => res?.data ?? res,
     }),
     refreshToken: builder.mutation<AuthResponse, RefreshTokenRequest>({
       query: (data) => ({
@@ -25,11 +25,11 @@ export const authApi = api.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      transformResponse: (res: ApiResponse<AuthResponse>) => res.data,
+      transformResponse: (res: any) => res?.data ?? res,
     }),
     getMe: builder.query<EmployeeResponse, void>({
       query: () => "/auth/me",
-      transformResponse: (res: ApiResponse<EmployeeResponse>) => res.data,
+      transformResponse: (res: any) => res?.data ?? res,
       providesTags: ["Profile"],
     }),
     unlockEmployee: builder.mutation<void, number>({

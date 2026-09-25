@@ -1,0 +1,235 @@
+import uuid
+from decimal import Decimal
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+class CycleStatus(models.TextChoices):
+    DRAFT = 'DRAFT', 'Draft'
+    ACTIVE = 'ACTIVE', 'Active'
+    REVIEW_PERIOD = 'REVIEW_PERIOD', 'Review Period'
+    CLOSED = 'CLOSED', 'Closed'
+
+class PerformanceCycle(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150, unique=True)
+    description = models.TextField(blank=True, null=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(
+        max_length=20,
+        choices=CycleStatus.choices,
+        default=CycleStatus.DRAFT,
+        db_index=True
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_cycles'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Performance Cycle'
+        verbose_name_plural = 'Performance Cycles'
+        ordering = ['-start_date']
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(end_date__gte=models.F('start_date')),
+                name='cycle_end_date_gte_start_date'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_status_display()})"
+
+class EvaluationCriterion(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150, unique=True)
+    description = models.TextField()
+    maximum_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('100.00'),
+        validators=[MinValueValidator(Decimal('1.00'))]
+    )
+    weight = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        help_text='Weight in percentage (e.g. 25.00 for 25%)',
+        validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('100.00'))]
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Evaluation Criterion'
+        verbose_name_plural = 'Evaluation Criteria'
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} (Weight: {self.weight}%, Max: {self.maximum_score})"
+
+class AppraisalType(models.TextChoices):
+    SELF = 'SELF', 'Self Assessment'
+    MANAGER = 'MANAGER', 'Manager Evaluation'
+    ANNUAL_REVIEW = 'ANNUAL_REVIEW', 'Annual Review'
+
+class AppraisalStatus(models.TextChoices):
+    DRAFT = 'DRAFT', 'Draft'
+    SUBMITTED = 'SUBMITTED', 'Submitted'
+    UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
+    HR_APPROVED = 'HR_APPROVED', 'HR Approved'
+    PUBLISHED = 'PUBLISHED', 'Published'
+
+class Appraisal(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        'employees.EmployeeProfile',
+        on_delete=models.CASCADE,
+        related_name='appraisals',
+        db_index=True
+    )
+    cycle = models.ForeignKey(
+        PerformanceCycle,
+        on_delete=models.CASCADE,
+        related_name='appraisals',
+        db_index=True
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_appraisals'
+    )
+    appraisal_type = models.CharField(
+        max_length=20,
+        choices=AppraisalType.choices,
+        default=AppraisalType.MANAGER
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=AppraisalStatus.choices,
+        default=AppraisalStatus.DRAFT,
+        db_index=True
+    )
+    overall_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    self_comments = models.TextField(blank=True, null=True)
+    reviewer_comments = models.TextField(blank=True, null=True)
+    final_comments = models.TextField(blank=True, null=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Appraisal'
+        verbose_name_plural = 'Appraisals'
+        unique_together = ('employee', 'cycle', 'appraisal_type')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_appraisal_type_display()} - {self.employee.full_name} ({self.cycle.name}) [{self.get_status_display()}]"
+
+class AppraisalRating(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    appraisal = models.ForeignKey(
+        Appraisal,
+        on_delete=models.CASCADE,
+        related_name='ratings'
+    )
+    criterion = models.ForeignKey(
+        EvaluationCriterion,
+        on_delete=models.CASCADE,
+        related_name='ratings'
+    )
+    score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Appraisal Rating'
+        verbose_name_plural = 'Appraisal Ratings'
+        unique_together = ('appraisal', 'criterion')
+
+    def __str__(self):
+        return f"{self.appraisal.employee.full_name} - {self.criterion.name}: {self.score}"
+
+class PipStatus(models.TextChoices):
+    ACTIVE = 'ACTIVE', 'Active'
+    IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+    SUCCESSFUL = 'SUCCESSFUL', 'Successful'
+    EXTENDED = 'EXTENDED', 'Extended'
+    TERMINATED = 'TERMINATED', 'Terminated'
+
+class PerformanceImprovementPlan(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        'employees.EmployeeProfile',
+        on_delete=models.CASCADE,
+        related_name='pips',
+        db_index=True
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    reason = models.TextField()
+    objectives = models.TextField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(
+        max_length=20,
+        choices=PipStatus.choices,
+        default=PipStatus.ACTIVE,
+        db_index=True
+    )
+    review_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Performance Improvement Plan'
+        verbose_name_plural = 'Performance Improvement Plans'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"PIP: {self.employee.full_name} ({self.get_status_display()})"
+
+class RecognitionReward(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='rewards',
+        db_index=True
+    )
+    awarded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='given_rewards'
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Recognition & Reward'
+        verbose_name_plural = 'Recognition & Rewards'
+        ordering = ['-awarded_at']
+
+    def __str__(self):
+        return f"{self.title} awarded to {self.recipient.username}"
+

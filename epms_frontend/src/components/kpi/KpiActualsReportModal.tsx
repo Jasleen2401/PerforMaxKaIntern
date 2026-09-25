@@ -73,7 +73,7 @@ const KpiActualsReportModal: React.FC<KpiActualsReportModalProps> = ({ onClose }
 
     setIsDownloading(true);
     try {
-      let downloadUrl = `http://localhost:8080/api/v1/reports/kpi-actuals-completion/download?cycleId=${selectedCycleId}&thresholdDays=${thresholdDays}&format=${format}`;
+      let downloadUrl = `/api/v1/reports/kpi-actuals-completion/download?cycleId=${selectedCycleId}&thresholdDays=${thresholdDays}&format=${format}`;
       if (!isAdminOrHr && user?.id) {
         downloadUrl += `&managerId=${user.id}`;
       } else if (deptFilter) {
@@ -325,7 +325,7 @@ const KpiActualsReportModal: React.FC<KpiActualsReportModalProps> = ({ onClose }
                               <td className="px-6 py-3.5 flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden" style={{ background: avatar.bg, color: avatar.text }}>
                                   {(row as any).profileImage && (row as any).profileImage !== 'default.jpg' ? (
-                                    <img src={`http://localhost:8080${(row as any).profileImage}`} alt={row.employeeName}
+                                    <img src={`http://localhost:8000${(row as any).profileImage}`} alt={row.employeeName}
                                       className="w-full h-full object-cover"
                                       onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                                   ) : (

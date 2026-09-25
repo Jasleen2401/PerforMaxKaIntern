@@ -276,7 +276,7 @@ const EmployeeCard = ({
         >
           {employee.profileImage && employee.profileImage !== "default.jpg" ? (
             <img
-              src={`http://localhost:8080${employee.profileImage}`}
+              src={`http://localhost:8000${employee.profileImage}`}
               alt={employee.staffName}
               className="w-full h-full object-cover"
             />

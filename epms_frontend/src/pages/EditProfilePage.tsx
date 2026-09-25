@@ -115,7 +115,7 @@ const EditProfilePage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center gap-4" style={panelStyle}>
         <div style={{ width: 56, height: 56, borderRadius: "50%", background: avatarColor.bg, color: avatarColor.text, fontSize: 20, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
           {profile?.profileImage && profile.profileImage !== "default.jpg" ? (
-            <img src={`http://localhost:8080${profile.profileImage}?t=${imageTimestamp}`} alt={profile.staffName} className="w-full h-full object-cover"
+            <img src={`http://localhost:8000${profile.profileImage}?t=${imageTimestamp}`} alt={profile.staffName} className="w-full h-full object-cover"
               onError={(e) => { e.currentTarget.style.display = "none"; }} />
           ) : profile?.staffName.charAt(0)}
         </div>

@@ -419,7 +419,7 @@ const EmployeeList = () => {
                           {emp.profileImage &&
                           emp.profileImage !== "default.jpg" ? (
                             <img
-                              src={`http://localhost:8080${emp.profileImage}`}
+                              src={`http://localhost:8000${emp.profileImage}`}
                               alt={emp.staffName || "Employee"}
                               className="w-full h-full object-cover"
                               onError={(e) => {

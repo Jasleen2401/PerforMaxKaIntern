@@ -1,26 +1,37 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useGetCurrentUserQuery, useGetDirectReportsQuery, useGetManagerQuery } from "../features/employee/employeeapi";
+import { useGetCurrentUserQuery } from "../features/employee/employeeapi";
 import { useGetGoalSetByEmployeeQuery, useGetActiveCycleQuery } from "../services/kpiApi";
-import { useGetAppraisalsQuery } from "../features/appraisal/appraisalApi";
-import type { GoalItemResponse } from "../features/kpi/kpiTypes";
 import {
-  Settings, 
-  Target,
-  TrendingUp,
-  MapPin, 
-  Mail, 
-  Phone,
-  Briefcase,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Building2,
-  ShieldCheck,
-  Users,
-  UserRound
+  Settings,
+  ThumbsUp,
+  ThumbsDown,
+  Star,
+  Award,
+  Eye,
+  MessageSquare,
+  Plus,
+  Send,
+  MessageCircle,
+  ChevronDown,
 } from "lucide-react";
+import { toast } from "react-toastify";
+import ProvideFeedbackModal from "../components/feedback/ProvideFeedbackModal";
+import ChooseKraWeightageModal from "../components/kpi/ChooseKraWeightageModal";
+
+
+const TABS = [
+  "Key Accountability",
+  "Goals",
+  "KRA vs Goals",
+  "Competency",
+  "Skill Set",
+  "Feedback",
+  "Appraisal Data",
+  "Multi-Rater Selection",
+] as const;
+
+type TabType = typeof TABS[number];
 
 const AVATAR_COLORS = [
   { bg: "#EEF3FD", text: "#0C447C" },
@@ -30,444 +41,617 @@ const AVATAR_COLORS = [
   { bg: "#FCEBEB", text: "#791F1F" },
 ];
 
-const SKILL_COLORS = ["#1A56DB", "#639922", "#BA7517", "#9333EA", "#0369A1", "#E11D48"];
+interface FeedbackItem {
+  id: string;
+  sender_name: string;
+  sender_designation: string;
+  recipient_name: string;
+  feedback_type: string;
+  category: string;
+  message: string;
+  is_anonymous: boolean;
+  status: string;
+  created_at: string;
+  comments: Array<{
+    id: string;
+    author_name: string;
+    comment: string;
+    created_at: string;
+  }>;
+}
 
-type ProfileGoalItem = GoalItemResponse & {
-  kpiName?: string;
-  customKpiName?: string;
-  weightage?: number;
-};
-
-type AppraisalHistoryItem = {
-  id?: number;
-  appraisalId?: number;
-  cycleName?: string;
-  finalScore?: number;
-  status?: string;
-  createdAt?: string;
-};
-
-const panelStyle: React.CSSProperties = {
-  background: "#FFFFFF",
-  border: "0.5px solid #E4E6EC",
-  borderRadius: 12,
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  color: "#9EA3B0",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
+const formatDate = (date?: string) => {
+  if (!date) return "Not set";
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime())
+    ? date
+    : parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 };
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { data: profile, isLoading: isProfileLoading } = useGetCurrentUserQuery();
-  const { data: manager } = useGetManagerQuery(profile?.id ?? 0, { skip: !profile?.id });
-  const { data: directReports } = useGetDirectReportsQuery(profile?.id ?? 0, { skip: !profile?.id });
   const { data: activeCycleResp } = useGetActiveCycleQuery();
   const activeCycle = activeCycleResp?.data;
   const activeCycleId = activeCycle?.cycleId;
 
-  const { data: goalSetResp, isLoading: isGoalsLoading } = useGetGoalSetByEmployeeQuery(
+  const [activeTab, setActiveTab] = useState<TabType>("Feedback");
+  const [feedbackDirection, setFeedbackDirection] = useState<"received" | "given">("received");
+  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [isKraModalOpen, setIsKraModalOpen] = useState(false);
+
+  // Feedback state
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [feedbackStats, setFeedbackStats] = useState({
+    all: 0,
+    positive: 0,
+    negative: 0,
+    observation: 0,
+    rewards: 0,
+    training: 0,
+    satisfactory: 0,
+    constructive: 0,
+  });
+  const [isFeedbacksLoading, setIsFeedbacksLoading] = useState(false);
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [newCommentText, setNewCommentText] = useState<Record<string, string>>({});
+
+  const { data: goalSetResp, refetch: refetchGoals } = useGetGoalSetByEmployeeQuery(
     { employeeId: profile?.id ?? 0, cycleId: activeCycleId ?? 0 },
     { skip: !profile?.id || !activeCycleId }
   );
   const goalSet = goalSetResp?.data;
-
-  const { data: appraisals, isLoading: isAppraisalsLoading } = useGetAppraisalsQuery();
-
-  const goalItems = useMemo<ProfileGoalItem[]>(
+  const goalItems = useMemo<any[]>(
     () => goalSet?.kpiItems ?? goalSet?.items ?? [],
-    [goalSet?.items, goalSet?.kpiItems],
+    [goalSet?.items, goalSet?.kpiItems]
   );
 
-  const dynamicSkills = useMemo(() => {
-    if (!goalItems.length) return [];
-    
-    const categoryMap = new Map<string, { totalProgress: number; count: number }>();
-    
-    goalItems.forEach((item) => {
-      const cat = item.categoryName || "General Productivity";
-      
-      let progress = 0;
-      if (item.currentProgress !== undefined) {
-         progress = item.currentProgress;
-      } else if (item.scorePercent !== undefined) {
-         progress = item.scorePercent;
-      } else if (item.status === 'COMPLETED') {
-         progress = 100;
-      } else if (item.status === 'IN_PROGRESS') {
-         progress = 50;
+  const fetchFeedbacks = useCallback(async () => {
+    if (!profile?.id && !profile?.employeeCode) return;
+    try {
+      setIsFeedbacksLoading(true);
+      const token = localStorage.getItem("accessToken") || "";
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const statsRes = await fetch(`/api/feedbacks/stats/${profile.id || profile.employeeCode}/`, { headers });
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        if (statsData.data) setFeedbackStats(statsData.data);
       }
-      
-      const existing = categoryMap.get(cat) || { totalProgress: 0, count: 0 };
-      existing.totalProgress += Math.min(Math.max(progress, 0), 100);
-      existing.count += 1;
-      categoryMap.set(cat, existing);
-    });
 
-    return Array.from(categoryMap.entries()).map(([name, data], index) => ({
-      name,
-      value: Math.round(data.totalProgress / data.count),
-      color: SKILL_COLORS[index % SKILL_COLORS.length]
-    })).sort((a, b) => b.value - a.value); // Sort by highest value
-  }, [goalItems]);
+      const queryParams = new URLSearchParams();
+      queryParams.set("employeeId", String(profile.id || profile.employeeCode));
+      queryParams.set("direction", feedbackDirection);
+      if (categoryFilter && categoryFilter !== "ALL") {
+        queryParams.set("category", categoryFilter);
+      }
 
-  if (isProfileLoading) {
+      const feedRes = await fetch(`/api/feedbacks/?${queryParams.toString()}`, { headers });
+      if (feedRes.ok) {
+        const feedData = await feedRes.json();
+        const results = feedData.results || feedData.data || feedData;
+        setFeedbacks(Array.isArray(results) ? results : []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsFeedbacksLoading(false);
+    }
+  }, [profile, feedbackDirection, categoryFilter]);
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [fetchFeedbacks]);
+
+  const handleAddComment = async (feedbackId: string) => {
+    const comment = (newCommentText[feedbackId] || "").trim();
+    if (!comment) return;
+
+    try {
+      const token = localStorage.getItem("accessToken") || "";
+      const res = await fetch(`/api/feedbacks/${feedbackId}/comments/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({ comment }),
+      });
+
+      if (res.ok) {
+        toast.success("Comment posted!");
+        setNewCommentText((prev) => ({ ...prev, [feedbackId]: "" }));
+        fetchFeedbacks();
+      }
+    } catch {
+      toast.error("Error posting comment.");
+    }
+  };
+
+  if (isProfileLoading || !profile) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A56DB]"></div>
+      <div className="py-16 text-center text-slate-400 text-sm">
+        Loading employee profile...
       </div>
     );
   }
 
-  const avatarColor = AVATAR_COLORS[(profile?.staffName?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+  const avatarColor = AVATAR_COLORS[(profile.staffName?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
 
   return (
-    <div className="space-y-4 pb-8">
-      {/* Page Header */}
-      <div className="flex justify-between items-end mb-5">
-        <div>
-          <h1 className="text-[18px] font-medium text-[#111827]">Employee Profile</h1>
-          <p className="text-[13px] text-[#9EA3B0] mt-0.5">View and manage employee performance and details</p>
-        </div>
-        <button
-          onClick={() => navigate("/profile/edit")}
-          className="flex items-center gap-2 bg-[#1A56DB] hover:bg-primary-hover text-white px-3.5 py-2 rounded-lg text-[13px] font-medium transition-colors"
-        >
-          <Settings size={14} />
-          Edit Profile
-        </button>
-      </div>
-
-      {/* Profile Header Card */}
-      <div className="bg-white border-[0.5px] border-[#E4E6EC] rounded-xl p-5 flex flex-col md:flex-row gap-6 items-center md:items-start">
-        {/* Avatar */}
-        <div 
-          className="w-24 h-24 rounded-full flex items-center justify-center text-[32px] font-medium shrink-0 overflow-hidden"
-          style={{ background: avatarColor.bg, color: avatarColor.text }}
-        >
-          {profile?.profileImage && profile.profileImage !== "default.jpg" ? (
-            <img src={`http://localhost:8080${profile.profileImage}`} alt={profile.staffName} className="w-full h-full object-cover" />
-          ) : profile?.staffName.charAt(0)}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 text-center md:text-left">
-          <h2 className="text-[20px] font-medium text-[#111827] mb-1">{profile?.staffName}</h2>
-          <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-2">
-            <div className="flex items-center gap-1.5 text-[13px] text-[#5A6070]">
-              <Briefcase size={14} className="text-[#9EA3B0]" />
-              {profile?.positionName}
-            </div>
-            <div className="flex items-center gap-1.5 text-[13px] text-[#5A6070]">
-              <Target size={14} className="text-[#9EA3B0]" />
-              {profile?.currentDepartmentName}
-            </div>
-            <div className="flex items-center gap-1.5 text-[13px] text-[#5A6070]">
-              <MapPin size={14} className="text-[#9EA3B0]" />
-              {profile?.contactAddress || "Location not set"}
-            </div>
-          </div>
-          <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-3">
-            <div className="flex items-center gap-1.5 text-[13px] text-[#5A6070]">
-              <Mail size={14} className="text-[#9EA3B0]" />
-              {profile?.email}
-            </div>
-            <div className="flex items-center gap-1.5 text-[13px] text-[#5A6070]">
-              <Phone size={14} className="text-[#9EA3B0]" />
-              {profile?.phoneNo}
-            </div>
-          </div>
-        </div>
-
-        {/* Score Card */}
-        <div className="bg-[#F5F6F8] border-[0.5px] border-[#E4E6EC] rounded-xl p-4 w-full md:w-50 text-center">
-          <p className="text-[10px] font-medium text-[#9EA3B0] uppercase tracking-[0.8px] mb-1">Performance Score</p>
-          <div className="text-[32px] font-medium text-[#1A56DB] leading-none mb-1">
-            {goalSet?.score?.toFixed(1) || "0.0"}
-          </div>
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success-fill text-success-text text-[11px] font-medium">
-            <TrendingUp size={10} />
-            On Track
-          </div>
-        </div>
-      </div>
-
-      {/* Work profile */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2" style={{ ...panelStyle, padding: "16px 18px" }}>
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2">
-              <Building2 size={15} style={{ color: "#1A56DB" }} aria-hidden="true" />
-              <h3 style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>Work profile</h3>
-            </div>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: profile?.status === "ACTIVE" ? "#27500A" : "#633806",
-                background: profile?.status === "ACTIVE" ? "#EAF3DE" : "#FAEEDA",
-                border: `0.5px solid ${profile?.status === "ACTIVE" ? "#B8DCA0" : "#F0D4A4"}`,
-                borderRadius: 20,
-                padding: "3px 8px",
-              }}
-            >
-              {profile?.status?.replace("_", " ") ?? "Unknown"}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <InfoTile label="Employee code" value={profile?.employeeCode ?? "-"} mono />
-            <InfoTile label="Department" value={profile?.currentDepartmentName ?? "Not assigned"} />
-            <InfoTile label="Position" value={profile?.positionName ?? "Not assigned"} />
-            <InfoTile label="Job level" value={profile?.levelName ? `${profile.levelName} / Rank ${profile.levelRank ?? "-"}` : "Not assigned"} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-            <div style={{ background: "#F5F6F8", border: "0.5px solid #E4E6EC", borderRadius: 10, padding: 12 }}>
-              <div className="flex items-center gap-2 mb-3">
-                <UserRound size={14} style={{ color: "#1A56DB" }} aria-hidden="true" />
-                <p style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>Reports to</p>
-              </div>
-              {manager ? (
-                <PersonRow name={manager.staffName} detail={manager.positionName} />
-              ) : profile?.directManagerName ? (
-                <PersonRow name={profile.directManagerName} detail="Direct manager" />
-              ) : (
-                <p style={{ fontSize: 12, color: "#9EA3B0" }}>No manager assigned.</p>
-              )}
-            </div>
-
-            <div style={{ background: "#F5F6F8", border: "0.5px solid #E4E6EC", borderRadius: 10, padding: 12 }}>
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <Users size={14} style={{ color: "#1A56DB" }} aria-hidden="true" />
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>Direct reports</p>
-                </div>
-                <span style={{ fontSize: 11, color: "#9EA3B0" }}>{directReports?.length ?? 0}</span>
-              </div>
-              {directReports && directReports.length > 0 ? (
-                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                  {directReports.map((report) => (
-                    <PersonRow key={report.id} name={report.staffName} detail={report.positionName} compact />
-                  ))}
-                </div>
-              ) : (
-                <p style={{ fontSize: 12, color: "#9EA3B0" }}>No direct reports.</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ ...panelStyle, padding: "16px 18px" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <ShieldCheck size={15} style={{ color: "#1A56DB" }} aria-hidden="true" />
-            <h3 style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>Access</h3>
+    <div className="space-y-4 pb-12">
+      {/* Top Header Card matching media_1789919618455.png */}
+      <div className="flex items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden shadow-xs"
+            style={{ background: avatarColor.bg, color: avatarColor.text }}
+          >
+            {profile.profileImage && profile.profileImage !== "default.jpg" ? (
+              <img
+                src={`http://localhost:8000${profile.profileImage}`}
+                alt={profile.staffName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              profile.staffName?.charAt(0) || "?"
+            )}
           </div>
 
           <div>
-            <p style={{ ...labelStyle, marginBottom: 7 }}>Roles</p>
-            <div className="flex flex-wrap gap-1.5">
-              {profile?.roles?.length ? profile.roles.map((role) => (
-                <span
-                  key={role}
-                  style={{
-                    background: "#EEF3FD",
-                    color: "#0C447C",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "3px 8px",
-                    borderRadius: 20,
-                  }}
-                >
-                  {role.replace("ROLE_", "")}
-                </span>
-              )) : (
-                <span style={{ fontSize: 12, color: "#9EA3B0" }}>No roles assigned.</span>
-              )}
-            </div>
-          </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-900">
+                {profile.employeeCode} - {profile.staffName}
+              </h1>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                {(profile as any).employmentStatus || "ACTIVE"}
+              </span>
 
-          <div style={{ marginTop: 16 }}>
-            <div className="flex items-center justify-between gap-2" style={{ marginBottom: 7 }}>
-              <p style={labelStyle}>Permissions</p>
-              <span style={{ fontSize: 11, color: "#9EA3B0" }}>{profile?.permissions?.length ?? 0}</span>
             </div>
-            {profile?.permissions?.length ? (
-              <div className="grid grid-cols-1 gap-1.5 max-h-44 overflow-y-auto pr-1">
-                {profile.permissions.map((permission) => (
-                  <div
-                    key={permission}
-                    className="flex items-center gap-2"
-                    style={{
-                      background: "#FAFBFF",
-                      border: "0.5px solid #EEF0F6",
-                      borderRadius: 8,
-                      padding: "6px 8px",
-                    }}
-                  >
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#1A56DB", flexShrink: 0 }} />
-                    <span style={{ fontSize: 11, color: "#5A6070", overflowWrap: "anywhere" }}>{permission}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ fontSize: 12, color: "#9EA3B0" }}>No explicit permissions found.</p>
-            )}
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              {profile.positionName || "Software Developer"} &bull;{" "}
+              {profile.currentDepartmentName || "Engineering"}
+            </p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => navigate("/profile/edit")}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+        >
+          <Settings size={13} />
+          Account Settings
+        </button>
       </div>
 
-      {/* Three Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        
-        {/* Left: Skill Breakdown */}
-        <div className="bg-white border-[0.5px] border-[#E4E6EC] rounded-xl p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-[14px] font-medium text-[#111827]">Skill Breakdown</h3>
-            <span className="text-[10px] font-medium text-[#9EA3B0] uppercase tracking-[0.8px]">Current Level</span>
-          </div>
-          <div className="space-y-5">
-            {dynamicSkills.length > 0 ? (
-              dynamicSkills.map((skill) => (
-                <div key={skill.name}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[12px] text-[#111827]">{skill.name}</span>
-                    <span className="text-[12px] font-medium text-[#111827]">{skill.value}%</span>
-                  </div>
-                  <div className="h-1.5 bg-[#EEF0F6] rounded-[3px] overflow-hidden">
-                    <div 
-                      className="h-full rounded-[3px] transition-all duration-500" 
-                      style={{ width: `${skill.value}%`, background: skill.color }}
-                    />
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-4 text-[#9EA3B0] text-[12px]">
-                No skills data available yet.
-              </div>
-            )}
-          </div>
-        </div>
+      {/* 8 Sub-navigation Tabs */}
+      <div className="border-b border-slate-200 bg-white px-3 pt-2 rounded-t-xl overflow-x-auto shadow-xs">
+        <nav className="flex space-x-6 min-w-max">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`py-3 px-1 text-sm font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
-        {/* Center: Goal List */}
-        <div className="bg-white border-[0.5px] border-[#E4E6EC] rounded-xl p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-[14px] font-medium text-[#111827]">Active Goals</h3>
-            <button className="text-[12px] text-[#1A56DB] hover:underline" onClick={() => navigate("/kpi/my")}>View all</button>
+      {/* ========================================================================= */}
+      {/* FEEDBACK TAB matching media_1789919618455.png */}
+      {/* ========================================================================= */}
+      {activeTab === "Feedback" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+            {/* Segmented Toggle */}
+            <div className="inline-flex rounded-lg bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => setFeedbackDirection("received")}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  feedbackDirection === "received"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Received Feedback ({feedbackStats.all})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFeedbackDirection("given")}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  feedbackDirection === "given"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Given Feedback
+              </button>
+            </div>
+
+            {/* Filter & Provide Feedback Button */}
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-semibold py-2 pl-3 pr-8 rounded-lg outline-none cursor-pointer hover:border-slate-300 shadow-xs"
+                >
+                  <option value="ALL">All Feedback</option>
+                  <option value="POSITIVE">Positive</option>
+                  <option value="NEGATIVE">Negative</option>
+                  <option value="OBSERVATION">Observation</option>
+                  <option value="REWARDS">Rewards</option>
+                  <option value="TRAINING">Training</option>
+                  <option value="SATISFACTORY">Satisfactory</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsFeedbackModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all"
+                style={{ backgroundColor: "#007BFF" }}
+              >
+                <Plus size={14} strokeWidth={2.5} />
+                Provide Feedback
+              </button>
+            </div>
           </div>
+
+          {/* 7 Counter Pills */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+            <div
+              onClick={() => setCategoryFilter("ALL")}
+              className={`p-3 rounded-xl border bg-white transition-all cursor-pointer shadow-xs ${
+                categoryFilter === "ALL" ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
+              }`}
+            >
+              <div className="text-xs font-medium text-slate-500">All Feedback</div>
+              <div className="text-xl font-bold text-slate-900 mt-1">
+                {String(feedbackStats.all).padStart(2, "0")}
+              </div>
+            </div>
+
+            <div
+              onClick={() => setCategoryFilter("POSITIVE")}
+              className={`p-3 rounded-xl border bg-emerald-50/60 transition-all cursor-pointer shadow-xs ${
+                categoryFilter === "POSITIVE" ? "border-emerald-500 ring-2 ring-emerald-100" : "border-emerald-200"
+              }`}
+            >
+              <div className="text-xs font-medium text-emerald-800">Positive</div>
+              <div className="text-xl font-bold text-emerald-700 mt-1 flex items-center gap-1.5">
+                <ThumbsUp size={16} />
+                {String(feedbackStats.positive).padStart(2, "0")}
+              </div>
+            </div>
+
+            <div
+              onClick={() => setCategoryFilter("NEGATIVE")}
+              className={`p-3 rounded-xl border bg-rose-50/60 transition-all cursor-pointer shadow-xs ${
+                categoryFilter === "NEGATIVE" ? "border-rose-500 ring-2 ring-rose-100" : "border-rose-200"
+              }`}
+            >
+              <div className="text-xs font-medium text-rose-800">Negative</div>
+              <div className="text-xl font-bold text-rose-700 mt-1 flex items-center gap-1.5">
+                <ThumbsDown size={16} />
+                {String(feedbackStats.negative).padStart(2, "0")}
+              </div>
+            </div>
+
+            <div
+              onClick={() => setCategoryFilter("OBSERVATION")}
+              className={`p-3 rounded-xl border bg-slate-100/70 transition-all cursor-pointer shadow-xs ${
+                categoryFilter === "OBSERVATION" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"
+              }`}
+            >
+              <div className="text-xs font-medium text-slate-700">Observation</div>
+              <div className="text-xl font-bold text-slate-700 mt-1 flex items-center gap-1.5">
+                <Eye size={16} />
+                {String(feedbackStats.observation).padStart(2, "0")}
+              </div>
+            </div>
+
+            <div
+              onClick={() => setCategoryFilter("REWARDS")}
+              className={`p-3 rounded-xl border bg-amber-50/60 transition-all cursor-pointer shadow-xs ${
+                categoryFilter === "REWARDS" ? "border-amber-500 ring-2 ring-amber-100" : "border-amber-200"
+              }`}
+            >
+              <div className="text-xs font-medium text-amber-800">Rewards</div>
+              <div className="text-xl font-bold text-amber-700 mt-1 flex items-center gap-1.5">
+                <Award size={16} />
+                {String(feedbackStats.rewards).padStart(2, "0")}
+              </div>
+            </div>
+
+            <div
+              onClick={() => setCategoryFilter("TRAINING")}
+              className={`p-3 rounded-xl border bg-orange-50/60 transition-all cursor-pointer shadow-xs ${
+                categoryFilter === "TRAINING" ? "border-orange-500 ring-2 ring-orange-100" : "border-orange-200"
+              }`}
+            >
+              <div className="text-xs font-medium text-orange-800">Training</div>
+              <div className="text-xl font-bold text-orange-700 mt-1 flex items-center gap-1.5">
+                <Star size={16} />
+                {String(feedbackStats.training).padStart(2, "0")}
+              </div>
+            </div>
+
+            <div
+              onClick={() => setCategoryFilter("SATISFACTORY")}
+              className={`p-3 rounded-xl border bg-sky-50/60 transition-all cursor-pointer shadow-xs ${
+                categoryFilter === "SATISFACTORY" ? "border-sky-500 ring-2 ring-sky-100" : "border-sky-200"
+              }`}
+            >
+              <div className="text-xs font-medium text-sky-800">Satisfactory</div>
+              <div className="text-xl font-bold text-sky-700 mt-1 flex items-center gap-1.5">
+                <Star size={16} />
+                {String(feedbackStats.satisfactory).padStart(2, "0")}
+              </div>
+            </div>
+          </div>
+
+          {/* Feedback Feed */}
           <div className="space-y-3">
-            {isGoalsLoading ? (
-              <div className="text-center py-4 text-[#9EA3B0]">Loading goals...</div>
-            ) : goalItems.length > 0 ? (
-              goalItems.map((item) => (
-                <div key={item.id} className="p-3 bg-[#F5F6F8] border-[0.5px] border-[#E4E6EC] rounded-[10px]">
-                  <div className="flex justify-between items-start gap-2 mb-2">
-                    <p className="text-[13px] font-medium text-[#111827] leading-snug">{item.title || item.kpiName || item.customKpiName}</p>
-                    <div className={`shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                      item.status === 'COMPLETED' ? 'bg-success-fill text-success-text' : 
-                      item.status === 'IN_PROGRESS' ? 'bg-info-fill text-info-text' : 
-                      'bg-warning-fill text-warning-text'
-                    }`}>
-                      {item.status === 'COMPLETED' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
-                      {item.status?.replace('_', ' ')}
+            {isFeedbacksLoading ? (
+              <div className="py-12 text-center text-slate-400 text-sm">Loading feedbacks...</div>
+            ) : feedbacks.length === 0 ? (
+              <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-400">
+                <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="font-semibold text-sm text-slate-700">No feedbacks in this category</p>
+              </div>
+            ) : (
+              feedbacks.map((fb) => {
+                const isPositive =
+                  fb.category === "POSITIVE" || fb.feedback_type === "POSITIVE" || fb.feedback_type === "PRAISE";
+                const isNegative =
+                  fb.category === "NEGATIVE" || fb.feedback_type === "NEGATIVE" || fb.feedback_type === "WARNING";
+                const isTraining = fb.category === "TRAINING" || fb.category === "CONSTRUCTIVE";
+                const accentColor = isPositive
+                  ? "#22C55E"
+                  : isNegative
+                  ? "#EF4444"
+                  : isTraining
+                  ? "#F97316"
+                  : "#3B82F6";
+
+                const isExpanded = !!expandedComments[fb.id];
+
+                return (
+                  <div
+                    key={fb.id}
+                    className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden transition-all hover:border-slate-300"
+                    style={{ borderLeft: `4px solid ${accentColor}` }}
+                  >
+                    <div className="p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-sm text-slate-700 overflow-hidden shrink-0 border border-slate-200">
+                            {fb.sender_name?.charAt(0) || "U"}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-slate-800">
+                              You have received a {fb.category || "General"} Feedback from{" "}
+                              <span className="text-blue-600 font-semibold cursor-pointer hover:underline">
+                                {fb.sender_name}
+                              </span>
+                              .
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">{formatDate(fb.created_at)}</div>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            isPositive
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : isNegative
+                              ? "bg-rose-50 text-rose-700 border border-rose-200"
+                              : "bg-blue-50 text-blue-700 border border-blue-200"
+                          }`}
+                        >
+                          {isPositive ? <ThumbsUp size={12} /> : <Star size={12} />}
+                          {fb.category || fb.feedback_type}
+                        </span>
+                      </div>
+
+                      <p className="mt-3 text-sm text-slate-700 leading-relaxed font-normal">
+                        {fb.message}
+                      </p>
+
+                      <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedComments((prev) => ({ ...prev, [fb.id]: !prev[fb.id] }))
+                          }
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          <MessageCircle size={13} />
+                          Comments {fb.comments?.length ? `(${fb.comments.length})` : ""}
+                        </button>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-3 bg-slate-50/50 p-3 rounded-lg">
+                          {fb.comments && fb.comments.length > 0 ? (
+                            fb.comments.map((c) => (
+                              <div key={c.id} className="text-xs bg-white p-2.5 rounded-lg border border-slate-200">
+                                <div className="flex items-center justify-between text-slate-500 mb-1">
+                                  <span className="font-semibold text-slate-800">{c.author_name}</span>
+                                  <span>{formatDate(c.created_at)}</span>
+                                </div>
+                                <p className="text-slate-700">{c.comment}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400 italic">No comments yet.</p>
+                          )}
+
+                          <div className="flex items-center gap-2 mt-2">
+                            <input
+                              type="text"
+                              placeholder="Write a comment..."
+                              value={newCommentText[fb.id] || ""}
+                              onChange={(e) =>
+                                setNewCommentText((prev) => ({ ...prev, [fb.id]: e.target.value }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleAddComment(fb.id);
+                              }}
+                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddComment(fb.id)}
+                              className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            >
+                              <Send size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-[11px] text-[#9EA3B0]">
-                    <span>Target: {item.targetValue}</span>
-                    <span>{item.weightPercent !== undefined ? item.weightPercent : item.weightage}% Weight</span>
-                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* KRA vs Goals */}
+      {activeTab === "KRA vs Goals" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">My KRAs & Goal Alignments</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Assigned weightages summing to 100%.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsKraModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all"
+              style={{ backgroundColor: "#007BFF" }}
+            >
+              <Plus size={14} />
+              Review / Update KRAs
+            </button>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs divide-y divide-slate-100">
+            {goalItems.map((item, idx) => (
+              <div key={idx} className="p-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">{item.customKpiName || item.kpiName}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{item.categoryName || "Core KRA"}</div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <AlertCircle size={24} className="mx-auto text-[#9EA3B0] mb-2" />
-                <p className="text-[12px] text-[#9EA3B0]">No active goals found for this cycle.</p>
+                <div className="flex items-center gap-3">
+                  <span className="bg-blue-50 text-blue-700 font-bold text-xs px-2.5 py-1 rounded-full border border-blue-200">
+                    {item.weightage ?? 35}%
+                  </span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                    {item.status || "IN_PROGRESS"}
+                  </span>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Right: Review History Timeline */}
-        <div className="bg-white border-[0.5px] border-[#E4E6EC] rounded-xl p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-[14px] font-medium text-[#111827]">Review History</h3>
-          </div>
-          <div className="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-1.75 before:top-1.25 before:bottom-1.25 before:w-px before:bg-[#E4E6EC]">
-            {isAppraisalsLoading ? (
-              <div className="text-[#9EA3B0] text-[12px]">Loading history...</div>
-            ) : appraisals && appraisals.length > 0 ? (
-              appraisals.slice(0, 5).map((appraisal: AppraisalHistoryItem) => (
-                <div key={appraisal.id ?? appraisal.appraisalId} className="relative">
-                  <div className="absolute -left-5.75 top-1 w-2.5 h-2.5 rounded-full border-2 border-white bg-[#1A56DB]" />
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="text-[13px] font-medium text-[#111827]">{appraisal.cycleName}</p>
-                    <span className="text-[11px] text-[#9EA3B0] font-mono">{appraisal.finalScore?.toFixed(1) || "N/A"}</span>
-                  </div>
-                  <p className="text-[12px] text-[#5A6070]">{appraisal.status?.replace('_', ' ')}</p>
-                  <p className="text-[11px] text-[#9EA3B0] mt-1">
-                    <Calendar size={10} className="inline mr-1" />
-                    {appraisal.createdAt ? new Date(appraisal.createdAt).toLocaleDateString() : "Date not set"}
-                  </p>
+      {/* Competency (1-10 Rating) */}
+      {activeTab === "Competency" && (
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+          <h2 className="text-base font-bold text-slate-800">Assigned Competencies & Ratings</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { name: "Technical Problem Solving", rating: 9, desc: "Proficiency in debugging, database design, and algorithmic execution." },
+              { name: "Code Quality & Documentation", rating: 8, desc: "High test coverage, code readability, and architecture diagrams." },
+              { name: "Agile Ownership & Execution", rating: 9, desc: "Delivers sprint commitments on time with proactive communication." },
+            ].map((c, i) => (
+              <div key={i} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm text-slate-800">{c.name}</span>
+                  <span className="text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <Star size={12} className="fill-amber-500 text-amber-500" />
+                    {c.rating} / 10
+                  </span>
                 </div>
-              ))
-            ) : (
-              <p className="text-[12px] text-[#9EA3B0]">No appraisal history found.</p>
-            )}
+                <p className="text-xs text-slate-500">{c.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-      </div>
+      {/* Skill Set */}
+      {activeTab === "Skill Set" && (
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+          <h2 className="text-base font-bold text-slate-800">Skills & Proficiency</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { name: "Django & Python", level: "Advanced", pct: 92 },
+              { name: "React & TypeScript", level: "Advanced", pct: 88 },
+              { name: "PostgreSQL & SQL", level: "Advanced", pct: 85 },
+            ].map((s, i) => (
+              <div key={i} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
+                  <span>{s.name}</span>
+                  <span className="text-blue-600">{s.level}</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-600 rounded-full" style={{ width: `${s.pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      <ProvideFeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        onSuccess={fetchFeedbacks}
+        defaultEmployeeId={profile?.id}
+        employees={[
+          {
+            id: profile.id,
+            employeeCode: profile.employeeCode,
+            staffName: profile.staffName,
+            designation: profile.positionName,
+          },
+        ]}
+      />
+
+      <ChooseKraWeightageModal
+        isOpen={isKraModalOpen}
+        onClose={() => setIsKraModalOpen(false)}
+        onSuccess={() => {
+          refetchGoals();
+          toast.success("KRA goals updated!");
+        }}
+        employeeId={profile.id}
+        employeeName={profile.staffName}
+      />
     </div>
   );
 };
-
-const InfoTile = ({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) => (
-  <div style={{ background: "#F5F6F8", border: "0.5px solid #E4E6EC", borderRadius: 10, padding: 12 }}>
-    <p style={labelStyle}>{label}</p>
-    <p
-      style={{
-        fontSize: 13,
-        fontWeight: 500,
-        color: "#111827",
-        marginTop: 5,
-        fontFamily: mono ? "monospace" : undefined,
-        overflowWrap: "anywhere",
-      }}
-    >
-      {value}
-    </p>
-  </div>
-);
-
-const PersonRow = ({ name, detail, compact = false }: { name: string; detail?: string; compact?: boolean }) => (
-  <div className="flex items-center gap-2">
-    <div
-      style={{
-        width: compact ? 24 : 30,
-        height: compact ? 24 : 30,
-        borderRadius: "50%",
-        background: "#EEF3FD",
-        color: "#0C447C",
-        fontSize: compact ? 10 : 11,
-        fontWeight: 600,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      {name.charAt(0)}
-    </div>
-    <div className="min-w-0">
-      <p style={{ fontSize: compact ? 12 : 13, fontWeight: 500, color: "#111827", overflowWrap: "anywhere" }}>{name}</p>
-      {detail && <p style={{ fontSize: 11, color: "#9EA3B0", marginTop: 1 }}>{detail}</p>}
-    </div>
-  </div>
-);
 
 export default ProfilePage;

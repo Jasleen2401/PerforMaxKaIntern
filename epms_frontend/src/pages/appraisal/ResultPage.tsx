@@ -48,7 +48,7 @@ const ResultPage: React.FC = () => {
     setIsExporting(true);
     try {
       const res = await fetch(
-        `http://localhost:8080/api/v1/reports/performance-summary/download?employeeId=${appraisal.employeeId}&cycleId=${appraisal.cycleId}&format=pdf`,
+        `/api/v1/reports/performance-summary/download?employeeId=${appraisal.employeeId}&cycleId=${appraisal.cycleId}&format=pdf`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -272,7 +272,7 @@ const ResultPage: React.FC = () => {
                 {appraisal.employeeSignComment?.startsWith("/uploads/") ? (
                   <div style={{ height: 120, background: "#F5F6F8", border: "0.5px dashed #E0E2E8", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                     <img
-                      src={`http://localhost:8080${appraisal.employeeSignComment}`}
+                      src={`http://localhost:8000${appraisal.employeeSignComment}`}
                       alt="Employee Signature"
                       style={{ maxHeight: 80, objectFit: "contain" }}
                     />
@@ -313,7 +313,7 @@ const ResultPage: React.FC = () => {
                 {appraisal.managerSignComment?.startsWith("/uploads/") ? (
                   <div style={{ height: 120, background: "#F5F6F8", border: "0.5px dashed #E0E2E8", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                     <img
-                      src={`http://localhost:8080${appraisal.managerSignComment}`}
+                      src={`http://localhost:8000${appraisal.managerSignComment}`}
                       alt="Manager Signature"
                       style={{ maxHeight: 80, objectFit: "contain" }}
                     />

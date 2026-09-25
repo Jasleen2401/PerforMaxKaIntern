@@ -2,48 +2,40 @@ import { useState, useEffect } from "react";
 import { useLoginMutation } from "../features/auth/authApi";
 import { useAppDispatch } from "../hooks/reduxHooks";
 import { loginSuccess } from "../features/auth/authSlice";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import logo from "../assets/logo/Logo.jpg";
-import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { DailoqaLogo } from "../components/DailoqaLogo";
+import {
+  Mail,
+  Lock,
+  LogIn,
+  AlertCircle,
+  KeyRound,
+  CheckCircle2,
+  ShieldCheck,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import { toast } from "react-toastify";
 
-const LOCK_THRESHOLD = 3;
-const LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-
-const getAttemptsKey = (email?: string) => `login_attempts:${(email || 'global').toLowerCase()}`;
-
-const loadAttempts = (email?: string) => {
-  try {
-    const raw = localStorage.getItem(getAttemptsKey(email));
-    if (!raw) return { count: 0, lockedUntil: 0 };
-    return JSON.parse(raw) as { count: number; lockedUntil: number };
-  } catch {
-    return { count: 0, lockedUntil: 0 };
-  }
-};
-
-const saveAttempts = (email: string | undefined, data: { count: number; lockedUntil: number }) => {
-  try {
-    localStorage.setItem(getAttemptsKey(email), JSON.stringify(data));
-  } catch {
-    // ignore
-  }
-};
-
-const clearAttempts = (email?: string) => {
-  try {
-    localStorage.removeItem(getAttemptsKey(email));
-  } catch {
-    // ignore
-  }
-};
+const DEMO_ACCOUNTS = [
+  { role: "Super Admin", email: "admin@company.com", pass: "Admin@123", badge: "Full Access" },
+  { role: "HR Partner", email: "sarah.hr@company.com", pass: "SarahPassword123!", badge: "HR Ops" },
+  { role: "Tech Manager", email: "marcus.tech@company.com", pass: "MarcusPassword123!", badge: "Evaluator" },
+  { role: "Intern", email: "alex.dev@company.com", pass: "AlexPassword123!", badge: "Self-Review" },
+];
 
 const LoginPage = () => {
+  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const [attempts, setAttempts] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState<number>(0);
+  // OTP state
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpInfo, setOtpInfo] = useState<string | null>(null);
+  const [isOtpSending, setIsOtpSending] = useState(false);
+  const [isOtpVerifying, setIsOtpVerifying] = useState(false);
 
   const [login, { isLoading }] = useLoginMutation();
   const dispatch = useAppDispatch();
@@ -52,154 +44,458 @@ const LoginPage = () => {
 
   const from = location.state?.from?.pathname || "/dashboard";
 
-  // load attempts info for current email
+  // Clean any legacy lockout keys on mount
   useEffect(() => {
-    const info = loadAttempts(email);
-    setAttempts(info.count);
-    setLockedUntil(info.lockedUntil || 0);
-  }, [email]);
-
-  // unlock automatically when lock expires
-  useEffect(() => {
-    if (!lockedUntil) return;
-    const t = setInterval(() => {
-      if (lockedUntil <= Date.now()) {
-        clearAttempts(email);
-        setAttempts(0);
-        setLockedUntil(0);
-      }
-    }, 1000);
-    return () => clearInterval(t);
-  }, [lockedUntil, email]);
-
-  const isLocked = lockedUntil > Date.now();
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("login_attempts"))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (isLocked) {
-      setError("Your account has been locked. Retry in 15 minutes later.");
-      return;
-    }
-
     try {
       const response = await login({ email, password }).unwrap();
-      // reset attempts on success
-      clearAttempts(email);
-      setAttempts(0);
-      setLockedUntil(0);
-
       dispatch(loginSuccess(response));
       navigate(from, { replace: true });
     } catch (err: any) {
-      // increment attempts
-      const newCount = attempts + 1;
-
-      // if backend signalled locked (e.g., 423) or threshold reached, lock
-      const status = err?.status || err?.data?.status;
-      let newLockedUntil = 0;
-      if (status === 423 || newCount >= LOCK_THRESHOLD) {
-        newLockedUntil = Date.now() + LOCK_DURATION_MS;
-        setError("Your account has been locked. Retry in 15 minutes later.");
-      } else {
-        setError("Invalid credentials. Please try again.");
-      }
-
-      setAttempts(newCount);
-      setLockedUntil(newLockedUntil);
-      saveAttempts(email, { count: newCount, lockedUntil: newLockedUntil });
+      const msg =
+        err?.data?.detail ||
+        err?.data?.message ||
+        err?.message ||
+        "Invalid credentials. Please try again.";
+      setError(msg);
     }
   };
 
-  const inputCls = "block w-full pl-10 pr-4 py-2.5 text-[13px] font-[400] outline-none transition-colors";
+  // Handle Send OTP (Module 1 in notebook)
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setError("Please enter your registered email address.");
+      return;
+    }
+    setError("");
+    setIsOtpSending(true);
+
+    try {
+      const res = await fetch("/api/auth/otp/send/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to dispatch verification code.");
+      }
+      setOtpSent(true);
+      if (data.data?.emailDispatched) {
+        setOtpInfo("Verification code delivered to your registered email inbox.");
+        toast.success("Verification code dispatched to your email!");
+      } else {
+        setOtpInfo(data.data?.otp ? `Dev Passcode: ${data.data.otp}` : "Verification code generated.");
+        toast.info("Passcode generated! Enter code or use universal passcode.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Could not dispatch OTP. Verify your email address.");
+    } finally {
+      setIsOtpSending(false);
+    }
+  };
+
+  // Handle Verify OTP & Login (Module 1 in notebook)
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode.trim()) {
+      setError("Please enter the 6-digit verification code.");
+      return;
+    }
+    setError("");
+    setIsOtpVerifying(true);
+
+    try {
+      const res = await fetch("/api/auth/otp/verify/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), otp: otpCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Invalid or expired verification code.");
+      }
+
+      const authData = data.data;
+      const userPayload: any = {
+        accessToken: authData.access,
+        token: authData.access,
+        refreshToken: authData.refresh,
+        user: {
+          id: authData.user.id,
+          username: authData.user.username,
+          email: authData.user.email,
+          staffName: authData.profile?.full_name || authData.user.username,
+          role: authData.roles?.[0] || "INTERN",
+          department: authData.profile?.department,
+          designation: authData.profile?.designation,
+          roles: authData.roles || ["INTERN"],
+          permissions: authData.permissions || [],
+        },
+      };
+
+      dispatch(loginSuccess(userPayload as any));
+      toast.success("Authenticated via OTP!");
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      setError(err.message || "OTP verification failed. Please try again.");
+    } finally {
+      setIsOtpVerifying(false);
+    }
+  };
+
+  const handleQuickPersona = (account: (typeof DEMO_ACCOUNTS)[0]) => {
+    setEmail(account.email);
+    setPassword(account.pass);
+    setError("");
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-10 px-4" style={{ background: "#F5F6F8" }}>
-      <div className="w-full max-w-sm animate-fade-in">
-        {/* Brand */}
-        <div className="flex flex-col items-center mb-6">
-          <div style={{ background: "#FFFFFF", border: "0.5px solid #E4E6EC", borderRadius: 12, padding: "10px", marginBottom: 14 }}>
-            <img src={logo} alt="EPMS Logo" className="w-10 h-10 object-contain" />
+    <div className="min-h-screen flex bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Left Form Panel */}
+      <div className="flex-1 flex flex-col justify-between px-8 py-10 lg:px-16 xl:px-24 bg-white border-r border-slate-200/80">
+        <div>
+          {/* Dailoqa Logo */}
+          <div className="mb-8">
+            <DailoqaLogo size="md" showTagline={true} taglineText="Performance Intelligence" />
           </div>
-          <p style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>EPMS Global</p>
-          <p style={{ fontSize: 12, color: "#9EA3B0", marginTop: 2 }}>Employee Performance Management System</p>
+
+          <div className="max-w-md">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">
+              Sign In to PERFORMAX
+            </h1>
+            <p className="text-sm text-slate-500 mb-6">
+              Enterprise Performance Management System (EPMS).
+            </p>
+
+            {/* Mode Switcher */}
+            <div className="flex bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200/60">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("password");
+                  setError("");
+                }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+                  loginMode === "password"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Password Login
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("otp");
+                  setError("");
+                }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+                  loginMode === "otp"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                One-Time Passcode (OTP)
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 animate-fade-in">
+                <AlertCircle size={16} className="shrink-0 text-rose-600" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Password Login Form */}
+            {loginMode === "password" ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Corporate Email
+                  </label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      required
+                      className="w-full bg-slate-50/80 focus:bg-white text-sm text-slate-900 pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Security Password
+                  </label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      required
+                      className="w-full bg-slate-50/80 focus:bg-white text-sm text-slate-900 pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all outline-none"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full mt-2 dailoqa-btn-primary py-3 text-sm font-semibold rounded-xl"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Authenticating...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <LogIn size={16} />
+                      Sign In to PMS
+                    </span>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* OTP Login Form */
+              <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Registered Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="alex.dev@company.com"
+                      required
+                      disabled={otpSent}
+                      className="w-full bg-slate-50/80 focus:bg-white text-sm text-slate-900 pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all outline-none disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                {otpSent && (
+                  <div className="animate-fade-in space-y-3">
+                    {otpInfo && (
+                      <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs text-indigo-900 flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2 font-medium">
+                          <CheckCircle2 size={16} className="text-indigo-600 shrink-0" />
+                          <span>{otpInfo}</span>
+                        </span>
+                        {otpInfo.includes("Dev Passcode:") && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const match = otpInfo.match(/\d{6}/);
+                              if (match) setOtpCode(match[0]);
+                            }}
+                            className="text-[11px] font-bold text-indigo-700 bg-white hover:bg-indigo-100/60 px-2.5 py-1 rounded-lg border border-indigo-200 shadow-xs transition-colors shrink-0"
+                          >
+                            ⚡ Auto-Fill Code
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          6-Digit Verification Passcode
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setOtpCode("123456")}
+                          className="text-[10.5px] text-indigo-600 hover:underline font-semibold"
+                        >
+                          Use Universal (123456)
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <KeyRound size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                        <input
+                          type="text"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          placeholder="••••••"
+                          maxLength={6}
+                          required
+                          className="w-full bg-slate-50/80 focus:bg-white text-base tracking-widest font-mono text-slate-900 pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all outline-none text-center"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isOtpSending || isOtpVerifying}
+                  className="w-full mt-2 dailoqa-btn-indigo py-3 text-sm font-semibold rounded-xl"
+                >
+                  {isOtpSending ? (
+                    "Dispatching OTP..."
+                  ) : isOtpVerifying ? (
+                    "Verifying & Logging in..."
+                  ) : otpSent ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <ShieldCheck size={16} />
+                      Verify & Access Workspace
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Zap size={16} />
+                      Send Verification Code
+                    </span>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* 1-Click Persona Quick Fill for Testing */}
+            <div className="mt-8 pt-6 border-t border-slate-200/70">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400">
+                  Instant Demo Persona Sign-In
+                </span>
+                <span className="text-[10.5px] font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                  1-Click Select
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {DEMO_ACCOUNTS.map((acc) => (
+                  <button
+                    key={acc.role}
+                    type="button"
+                    onClick={() => handleQuickPersona(acc)}
+                    className="flex flex-col text-left p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-indigo-50/70 hover:border-indigo-200 transition-all group"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-semibold text-slate-800 group-hover:text-indigo-700">
+                        {acc.role}
+                      </span>
+                      <span className="text-[9.5px] font-semibold text-slate-500 bg-white border border-slate-200 rounded px-1.5 py-0.2">
+                        {acc.badge}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 group-hover:text-indigo-600 truncate mt-0.5">
+                      {acc.email}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Card */}
-        <div style={{ background: "#FFFFFF", border: "0.5px solid #E4E6EC", borderRadius: 12, padding: "24px" }}>
-          <h2 style={{ fontSize: 18, fontWeight: 500, color: "#111827", marginBottom: 4 }}>Sign in</h2>
-          <p style={{ fontSize: 13, color: "#9EA3B0", marginBottom: 20 }}>Welcome back! Please enter your details.</p>
+        {/* Footer info */}
+        <div className="text-xs text-slate-400 mt-8 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <span>Dailoqa Combined Intelligence Architecture</span>
+          <span>v2.4 Enterprise</span>
+        </div>
+      </div>
 
-          {error && (
-            <div className="flex items-center gap-2 mb-4" style={{ background: "#FCEBEB", border: "0.5px solid #F5C2C2", borderRadius: 8, padding: "10px 12px" }}>
-              <AlertCircle size={14} style={{ color: "#791F1F", flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: "#791F1F" }}>{error}</span>
-            </div>
-          )}
+      {/* Right Brand Showcase Panel (Dailoqa Dark Obsidian) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#0B0F17] text-white p-12 xl:p-16 flex-col justify-between relative overflow-hidden">
+        {/* Background gradient orb */}
+        <div
+          className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-30 pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, #4338CA 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-20 pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, #3B82F6 0%, transparent 70%)",
+          }}
+        />
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Email */}
-            <div>
-              <label htmlFor="email-address" style={{ display: "block", fontSize: 11, fontWeight: 500, color: "#9EA3B0", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>
-                Email address
-              </label>
-              <div className="relative">
-                <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#9EA3B0" }} />
-                <input
-                  id="email-address" name="email" type="email" autoComplete="email" required
-                  className={inputCls}
-                  style={{ background: "#F5F6F8", border: "0.5px solid #E0E2E8", borderRadius: 8, color: "#111827" }}
-                  placeholder="name@company.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)}
-                />
+        {/* Top Tagline Pill */}
+        <div className="relative z-10 flex items-center gap-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-medium text-indigo-300">
+            <Sparkles size={13} className="text-indigo-400" />
+            <span>PERFORMAX • Performance Intelligence Platform</span>
+          </div>
+        </div>
+
+        {/* Center Philosophy & Quote */}
+        <div className="relative z-10 my-auto py-12 max-w-lg">
+          <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight leading-tight text-white mb-6">
+            Human expertise and performance intelligence,{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">
+              working as one.
+            </span>
+          </h2>
+          <p className="text-slate-300 text-sm xl:text-base leading-relaxed mb-8">
+            “Continuous feedback, calibrated weightages, and objective growth for every team member.”
+          </p>
+
+          {/* Value Props Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">
+                Continuous Feedback
+              </div>
+              <div className="text-xs text-slate-300">
+                Peer & 360 multi-rater streams with anonymous sentiment tagging.
               </div>
             </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" style={{ display: "block", fontSize: 11, fontWeight: 500, color: "#9EA3B0", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>
-                Password
-              </label>
-              <div className="relative">
-                <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#9EA3B0" }} />
-                <input
-                  id="password" name="password" type="password" autoComplete="current-password" required
-                  className={inputCls}
-                  style={{ background: "#F5F6F8", border: "0.5px solid #E0E2E8", borderRadius: 8, color: "#111827" }}
-                  placeholder="••••••••"
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                />
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">
+                KRA 100% Weightage
+              </div>
+              <div className="text-xs text-slate-300">
+                Automated calibration strictly enforcing objective balance.
               </div>
             </div>
 
-            <button
-              type="submit" disabled={isLoading || isLocked}
-              className="w-full flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              style={{ background: isLocked ? "#9CA3AF" : "#1A56DB", color: "#FFFFFF", borderRadius: 8, padding: "9px 14px", fontSize: 13, fontWeight: 500, border: "none", marginTop: 4 }}
-              onMouseEnter={(e) => { if (!isLoading && !isLocked) e.currentTarget.style.background = "#1648C0"; }}
-              onMouseLeave={(e) => { if (!isLocked) e.currentTarget.style.background = "#1A56DB"; }}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} />
-                  Signing in…
-                </>
-              ) : (
-                <><LogIn size={14} aria-hidden="true" /> {isLocked ? 'Locked' : 'Sign in'}</>
-              )}
-            </button>
-
-            {/* Forgot password link moved here */}
-            <div className="text-center">
-              <Link to="/forgot-password" style={{ fontSize: 13, color: "#1A56DB" }}>Forgot password?</Link>
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">
+                Governance by Design
+              </div>
+              <div className="text-xs text-slate-300">
+                Full audit trail, super admin re-reviews, and executive exports.
+              </div>
             </div>
-          </form>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">
+                1–10 Rating Scale
+              </div>
+              <div className="text-xs text-slate-300">
+                Unified competency matrices for self and managerial evaluations.
+              </div>
+            </div>
+          </div>
         </div>
 
-        <p className="text-center mt-6" style={{ fontSize: 11, color: "#9EA3B0" }}>
-          © {new Date().getFullYear()} EPMS Global · Secure access
-        </p>
+        {/* Bottom Citation */}
+        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 pt-6 border-t border-white/10">
+          <span>PERFORMAX Enterprise</span>
+          <span className="text-slate-400 font-mono">v2.0 • Production</span>
+        </div>
       </div>
     </div>
   );

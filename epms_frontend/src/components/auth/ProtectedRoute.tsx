@@ -15,7 +15,7 @@ const ProtectedRoute = ({
   maxLevel,
   requiredPermissions,
 }: ProtectedRouteProps) => {
-  const { isAuthenticated, hasAnyRole, user, hasPermission, accessToken} = useAuth();
+  const { isAuthenticated, hasAnyRole, user, hasPermission, accessToken, isAdmin } = useAuth();
   const location = useLocation();
 
   // Track if the profile fetch failed
@@ -40,6 +40,11 @@ const ProtectedRoute = ({
         </div>
       </div>
     );
+  }
+
+  // Admin has full unrestricted access across all routes
+  if (isAdmin) {
+    return <Outlet />;
   }
 
   // Role check

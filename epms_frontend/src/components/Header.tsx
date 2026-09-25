@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { NotificationBell } from "./NotificationBell";
-import { Search, HelpCircle, Settings, ChevronRight, Menu } from "lucide-react";
+import { Search, HelpCircle, Settings, ChevronRight, Menu, Zap } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
 interface PageInfo {
   section?: string;
@@ -8,33 +9,34 @@ interface PageInfo {
 }
 
 const PAGE_MAP: Record<string, PageInfo> = {
-  "/dashboard":            { title: "Dashboard" },
-  "/appraisal":            { section: "Appraisals", title: "Appraisal list" },
-  "/appraisal/360":        { section: "Appraisals", title: "360 Feedback" },
-  "/profile":              { title: "My profile" },
-  "/notifications":        { title: "Notifications" },
-  "/employees":            { section: "Management", title: "Employees" },
-  "/departments":          { section: "Management", title: "Departments" },
-  "/roles":                { section: "Management", title: "Roles" },
-  "/job-levels":           { section: "Management", title: "Job levels" },
-  "/positions":            { section: "Management", title: "Positions" },
-  "/teams":                { section: "Management", title: "Teams" },
-  "/permissions":          { section: "Management", title: "Permissions" },
-  "/permissions/matrix":   { section: "Management", title: "Permissions matrix" },
-  "/permissions/assign":   { section: "Management", title: "Assign permissions" },
-  "/financial-years":      { section: "Management", title: "Financial years" },
-  "/performance-categories": { section: "Management", title: "Performance categories" },
-  "/pip":                  { title: "Performance improvement plans" },
-  "/analytics":            { title: "Analytics" },
-  "/kpi":                  { section: "Performance Hub", title: "KPI hub" },
-  "/kpi/my":               { section: "Performance Hub", title: "My goals" },
-  "/kpi/team":             { section: "Performance Hub", title: "Team performance" },
-  "/kpi/manage":           { section: "Performance Hub", title: "Goal management" },
-  "/kpi/library":          { section: "Performance Hub", title: "KPI library" },
-  "/kpi/categories":       { section: "Performance Hub", title: "KPI categories" },
-  "/meetings":             { title: "1-on-1 meetings" },
-  "/continuous-feedback":  { title: "Continuous feedback" },
-  "/performance-history":  { title: "Performance pulse" },
+  "/dashboard":            { title: "Executive Dashboard" },
+  "/appraisal":            { section: "Performance Cycles", title: "Appraisal Assessments" },
+  "/appraisal/360":        { section: "Multi-Rater", title: "360° Peer Evaluations" },
+  "/profile":              { title: "Employee Profile Hub" },
+  "/notifications":        { title: "Notification Feed" },
+  "/employees":            { section: "Org Governance", title: "Employee Directory" },
+  "/departments":          { section: "Org Governance", title: "Departments" },
+  "/roles":                { section: "Access Security", title: "Role Architecture" },
+  "/job-levels":           { section: "Org Governance", title: "Job Bands & Levels" },
+  "/positions":            { section: "Org Governance", title: "Tracks & Positions" },
+  "/teams":                { section: "Org Governance", title: "Team Pods" },
+  "/permissions":          { section: "Access Security", title: "Permission Sets" },
+  "/permissions/matrix":   { section: "Access Security", title: "RBAC Matrix" },
+  "/permissions/assign":   { section: "Access Security", title: "Direct Permissions" },
+  "/financial-years":      { section: "Cycles", title: "Financial Quarters" },
+  "/performance-categories": { section: "Cycles", title: "Performance Categories" },
+  "/pip":                  { title: "Performance Recovery (PIP)" },
+  "/analytics":            { section: "Executive Insights", title: "Strategic Analytics" },
+  "/kpi":                  { section: "Objectives & KRAs", title: "KPI Intelligence Hub" },
+  "/kpi/my":               { section: "Objectives & KRAs", title: "My Goals & Targets" },
+  "/kpi/team":             { section: "Objectives & KRAs", title: "Team Performance Pulse" },
+  "/kpi/manage":           { section: "Objectives & KRAs", title: "Goal Management" },
+  "/kpi/library":          { section: "Objectives & KRAs", title: "KRA Library" },
+  "/kpi/categories":       { section: "Objectives & KRAs", title: "KRA Categories" },
+  "/meetings":             { title: "1-on-1 Sync Sessions" },
+  "/continuous-feedback":  { title: "Continuous Feedback Stream" },
+  "/performance-history":  { title: "Performance Pulse" },
+  "/audit-logs":           { section: "Governance", title: "Enterprise Audit Logs" },
 };
 
 function resolvePageInfo(pathname: string): PageInfo {
@@ -42,22 +44,8 @@ function resolvePageInfo(pathname: string): PageInfo {
   const prefix = Object.keys(PAGE_MAP)
     .filter((k) => pathname.startsWith(k) && k !== "/")
     .sort((a, b) => b.length - a.length)[0];
-  return prefix ? PAGE_MAP[prefix] : { title: "EPMS" };
+  return prefix ? PAGE_MAP[prefix] : { title: "PERFORMAX" };
 }
-
-const iconBtnBase: React.CSSProperties = {
-  width: 32,
-  height: 32,
-  background: "#F5F6F8",
-  border: "0.5px solid #E0E2E8",
-  borderRadius: 8,
-  color: "#5A6070",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-  transition: "background 0.15s, color 0.15s, border-color 0.15s",
-};
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -66,107 +54,93 @@ interface HeaderProps {
 const Header = ({ onMenuClick }: HeaderProps) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { user, isAdmin, isHR, isManager } = useAuth();
   const pageInfo = resolvePageInfo(pathname);
 
-  const handleIconEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.background = "#EEF3FD";
-    e.currentTarget.style.color = "#1A56DB";
-    e.currentTarget.style.borderColor = "#B5D4F4";
-  };
-  const handleIconLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.background = "#F5F6F8";
-    e.currentTarget.style.color = "#5A6070";
-    e.currentTarget.style.borderColor = "#E0E2E8";
-  };
+  const roleLabel = isAdmin
+    ? "Super Admin"
+    : isHR
+    ? "HR Partner"
+    : isManager
+    ? "Tech Manager"
+    : "Intern";
 
   return (
-    <header
-      className="flex items-center justify-between bg-white sticky top-0 z-30 shrink-0"
-      style={{ height: 52, borderBottom: "0.5px solid #E4E6EC", padding: "0 16px" }}
-    >
-      <div className="flex items-center gap-2">
-        {/* Hamburger — mobile only */}
+    <header className="flex items-center justify-between glass-header sticky top-0 z-30 shrink-0 px-6 h-14 select-none">
+      <div className="flex items-center gap-3">
+        {/* Mobile Hamburger */}
         <button
-          className="md:hidden flex items-center justify-center rounded-lg transition-colors hover:bg-[#F0F2F8]"
-          style={{ width: 32, height: 32, color: "#5A6070" }}
+          className="md:hidden flex items-center justify-center p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
           onClick={onMenuClick}
-          aria-label="Open menu"
+          aria-label="Open navigation menu"
         >
-          <Menu size={18} aria-hidden="true" />
+          <Menu size={18} />
         </button>
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1" aria-label="Breadcrumb">
+        {/* Clean Breadcrumb Navigation */}
+        <nav className="flex items-center gap-1.5" aria-label="Breadcrumb">
           {pageInfo.section ? (
             <>
-              <span className="hidden sm:inline" style={{ fontSize: 13, fontWeight: 400, color: "#9EA3B0" }}>
+              <span className="hidden sm:inline text-xs font-semibold uppercase tracking-wider text-slate-400">
                 {pageInfo.section}
               </span>
-              <ChevronRight size={12} className="hidden sm:block" style={{ color: "#9EA3B0" }} aria-hidden="true" />
-              <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
+              <ChevronRight size={12} className="hidden sm:block text-slate-300" aria-hidden="true" />
+              <span className="text-sm font-semibold text-slate-900 tracking-tight">
                 {pageInfo.title}
               </span>
             </>
           ) : (
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
+            <span className="text-sm font-semibold text-slate-900 tracking-tight">
               {pageInfo.title}
             </span>
           )}
         </nav>
       </div>
 
-      {/* Right actions */}
-      <div className="flex items-center gap-2">
-        {/* Search — hidden on very small screens */}
-        <div className="relative hidden sm:flex items-center">
-          <Search
-            size={14}
-            className="absolute left-3 pointer-events-none"
-            style={{ color: "#9EA3B0" }}
-            aria-hidden="true"
-          />
+      {/* Right Actions & Combined Intelligence Status */}
+      <div className="flex items-center gap-3">
+        {/* Global Search with ⌘K Badge */}
+        <div className="relative hidden lg:flex items-center">
+          <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search..."
-            style={{
-              background: "#F5F6F8",
-              border: "0.5px solid #E0E2E8",
-              borderRadius: 8,
-              padding: "6px 12px 6px 32px",
-              width: 160,
-              fontSize: 13,
-              color: "#9EA3B0",
-              fontFamily: "inherit",
-              outline: "none",
-            }}
+            placeholder="Search employees, KRAs, metrics..."
+            className="bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs text-slate-700 placeholder:text-slate-400 pl-9 pr-12 py-1.5 rounded-xl border border-slate-200/80 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none w-64"
           />
+          <kbd className="absolute right-2.5 text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 rounded px-1.5 py-0.5 pointer-events-none shadow-xs">
+            ⌘K
+          </kbd>
         </div>
 
-        {/* Notification bell */}
-        <NotificationBell />
+        {/* Active Persona Pill */}
+        <div className="hidden sm:flex items-center gap-1.5 bg-indigo-50/80 border border-indigo-100/90 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-medium">
+          <Zap size={12} className="text-indigo-600 fill-indigo-600" />
+          <span>{roleLabel}</span>
+        </div>
 
-        {/* Help — hidden on mobile */}
+        {/* Notification Bell */}
+        <div className="flex items-center">
+          <NotificationBell />
+        </div>
+
+        {/* Help Button */}
         <button
-          className="hidden md:flex"
-          style={iconBtnBase}
-          title="Help"
-          aria-label="Help"
-          onMouseEnter={handleIconEnter}
-          onMouseLeave={handleIconLeave}
+          className="hidden sm:flex items-center justify-center w-8 h-8 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all"
+          title="Combined Intelligence Docs"
+          aria-label="Documentation"
+          onClick={() => window.open("https://www.dailoqa.com/", "_blank")}
         >
-          <HelpCircle size={16} aria-hidden="true" />
+          <HelpCircle size={15} />
         </button>
 
-        {/* Settings */}
+        {/* Profile Settings */}
         <button
-          style={iconBtnBase}
-          title="Settings"
-          aria-label="Settings"
+          className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all"
+          title="My Profile & Settings"
+          aria-label="Profile Settings"
           onClick={() => navigate("/profile")}
-          onMouseEnter={handleIconEnter}
-          onMouseLeave={handleIconLeave}
         >
-          <Settings size={16} aria-hidden="true" />
+          <Settings size={15} />
         </button>
       </div>
     </header>

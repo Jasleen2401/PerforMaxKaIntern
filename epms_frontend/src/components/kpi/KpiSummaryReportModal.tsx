@@ -161,7 +161,7 @@ const KpiSummaryReportModal: React.FC<KpiSummaryReportModalProps> = ({ onClose }
     try {
       const cycleIdsParam = selectedCycleIds.join(',');
       const response = await fetch(
-        `http://localhost:8080/api/v1/reports/kpi-summary/download?employeeId=${selectedEmployeeId}&cycleIds=${cycleIdsParam}&format=${format}`,
+        `/api/v1/reports/kpi-summary/download?employeeId=${selectedEmployeeId}&cycleIds=${cycleIdsParam}&format=${format}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -298,7 +298,7 @@ const KpiSummaryReportModal: React.FC<KpiSummaryReportModalProps> = ({ onClose }
                               <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-medium overflow-hidden"
                                 style={{ background: avatarColor.bg, color: avatarColor.text }}>
                                 {emp.profileImage && emp.profileImage !== 'default.jpg' ? (
-                                  <img src={`http://localhost:8080${emp.profileImage}`} alt={emp.staffName}
+                                  <img src={`http://localhost:8000${emp.profileImage}`} alt={emp.staffName}
                                     className="w-full h-full object-cover"
                                     onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                                 ) : (
@@ -436,7 +436,7 @@ const KpiSummaryReportModal: React.FC<KpiSummaryReportModalProps> = ({ onClose }
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-medium overflow-hidden" style={{ background: avatarColors.bg, color: avatarColors.text }}>
                       {selectedEmployee?.profileImage && selectedEmployee.profileImage !== 'default.jpg' ? (
-                        <img src={`http://localhost:8080${selectedEmployee.profileImage}`}
+                        <img src={`http://localhost:8000${selectedEmployee.profileImage}`}
                           alt={selectedEmployee.staffName}
                           className="w-full h-full object-cover"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }} />

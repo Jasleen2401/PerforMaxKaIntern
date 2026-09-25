@@ -1,6 +1,7 @@
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
+import { DailoqaLogo } from "./DailoqaLogo";
 import {
   LayoutDashboard,
   ClipboardCheck,
@@ -37,48 +38,31 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Appraisals", to: "/appraisal", icon: ClipboardCheck, end: true },
+  { label: "Executive Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Performance Appraisals", to: "/appraisal", icon: ClipboardCheck, end: true },
   { label: "Performance Pulse", to: "/performance-history/admin", icon: History, adminOnly: true },
   { label: "Team Pulse", to: "/performance-history/manager", icon: History, privilegedOnly: true, hideForAdmin: true },
-  { label: "Continuous Feedback", to: "/continuous-feedback", icon: MessageSquare, hideForPrivileged: true, hideForAdmin: true },
-  { label: "1-on-1 Meetings", to: "/meetings", icon: Users, hideForPrivileged: true, hideForAdmin: true },
-  { label: "PIP", to: "/pip", icon: TrendingUp, end: true },
-  { label: "Development Plans", to: "/idp", icon: GraduationCap, end: true },
-  { label: "Analytics", to: "/analytics", icon: BarChart3, adminOnly: true },
-  { label: "Audit Logs", to: "/audit-logs", icon: FileClock },
+  { label: "Continuous Feedback", to: "/continuous-feedback", icon: MessageSquare },
+  { label: "1-on-1 Sync Meetings", to: "/meetings", icon: Users },
+  { label: "PIP Recovery Plans", to: "/pip", icon: TrendingUp, end: true },
+  { label: "IDP Development Plans", to: "/idp", icon: GraduationCap, end: true },
+  { label: "Strategic Analytics", to: "/analytics", icon: BarChart3, adminOnly: true },
+  { label: "System Audit Logs", to: "/audit-logs", icon: FileClock },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  { label: "Employees", to: "/employees", icon: Users },
+  { label: "Employees Directory", to: "/employees", icon: Users },
   { label: "Departments", to: "/departments", icon: Building2 },
-  { label: "Job Levels", to: "/job-levels", icon: Zap },
-  { label: "Positions", to: "/positions", icon: Briefcase },
-  { label: "Teams", to: "/teams", icon: Users },
-  { label: "Financial Years", to: "/financial-years", icon: Calendar },
-  { label: "Performance Categories", to: "/performance-categories", icon: Layers },
-  { label: "Strategic Analytics", to: "/analytics", icon: TrendingUp },
-  { label: "Roles", to: "/roles", icon: ShieldCheck, adminOnly: true },
-  { label: "Permissions", to: "/permissions", icon: ShieldCheck, adminOnly: true, end: true },
+  { label: "Job Levels & Bands", to: "/job-levels", icon: Zap },
+  { label: "Positions & Tracks", to: "/positions", icon: Briefcase },
+  { label: "Organizational Teams", to: "/teams", icon: Users },
+  { label: "Financial Cycles", to: "/financial-years", icon: Calendar },
+  { label: "Evaluation Criteria", to: "/performance-categories", icon: Layers },
+  { label: "Security Roles", to: "/roles", icon: ShieldCheck, adminOnly: true },
+  { label: "Access Permissions", to: "/permissions", icon: ShieldCheck, adminOnly: true, end: true },
   { label: "Permissions Matrix", to: "/permissions/matrix", icon: ShieldCheck, adminOnly: true },
   { label: "Assign Permissions", to: "/permissions/assign", icon: Zap, adminOnly: true },
 ];
-
-const AVATAR_COLORS = [
-  { bg: "#EEF3FD", text: "#0C447C" },
-  { bg: "#EAF3DE", text: "#27500A" },
-  { bg: "#FAEEDA", text: "#633806" },
-  { bg: "#F1EFE8", text: "#444441" },
-  { bg: "#FCEBEB", text: "#791F1F" },
-];
-
-const navCls = (active: boolean) =>
-  [
-    "flex items-center gap-[9px] w-full text-[13px] rounded-[8px] transition-colors",
-    active
-      ? "bg-[#EEF3FD] text-[#1A56DB] font-medium"
-      : "text-[#5A6070] font-normal hover:bg-[#F0F2F8] hover:text-[#111827]",
-  ].join(" ");
 
 interface SidebarProps {
   onClose?: () => void;
@@ -86,7 +70,6 @@ interface SidebarProps {
 
 const Sidebar = ({ onClose }: SidebarProps) => {
   const { logout, isAdmin, isHR, isManager, user, hasPermission, hasRole } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [mgmtOpen, setMgmtOpen] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
@@ -96,22 +79,19 @@ const Sidebar = ({ onClose }: SidebarProps) => {
     switch (item.label) {
       case "Performance Pulse":   return hasPermission("REPORT_VIEW_ALL");
       case "Team Pulse":          return hasPermission("APPRAISAL_VIEW_TEAM") && !isAdmin && !isHR;
-      case "Continuous Feedback": return hasPermission("CONTINUOUS_FEEDBACK");
-      case "1-on-1 Meetings":     return hasPermission("MEETING_MANAGE");
-      case "PIP":                 return hasPermission("PIP_VIEW_OWN") || hasPermission("PIP_CREATE");
-      case "Development Plans":   return true;
-      case "Analytics":           return hasPermission("REPORT_VIEW_ALL");
-      case "Audit Logs":          return isAdmin || hasRole("AUDIT_VIEWER");
+      case "Continuous Feedback": return true;
+      case "1-on-1 Sync Meetings":return true;
+      case "PIP Recovery Plans":  return hasPermission("PIP_VIEW_OWN") || hasPermission("PIP_CREATE");
+      case "IDP Development Plans": return true;
+      case "Strategic Analytics": return hasPermission("REPORT_VIEW_ALL");
+      case "System Audit Logs":   return isAdmin || hasRole("AUDIT_VIEWER");
       default:                    return true;
     }
   });
 
-  const avatarColor =
-    AVATAR_COLORS[(user?.staffName?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-
   const perfSubItems: Array<{ to: string; label: string; end?: boolean }> = [
     { to: "/kpi", label: "KPI Intelligence Hub", end: true },
-    ...(hasPermission("KPI_VIEW_OWN") ? [{ to: "/kpi/my", label: "My Goals" }] : []),
+    ...(hasPermission("KPI_VIEW_OWN") ? [{ to: "/kpi/my", label: "My Goals & KRAs" }] : []),
     ...(hasPermission("KPI_VIEW_OWN") && user ? [{ to: `/kpi/history/${user.id}`, label: "My KPI Journey" }] : []),
     ...(hasPermission("KPI_VIEW_TEAM") ? [{ to: "/kpi/team", label: "Team Performance" }] : []),
     ...(isHR || isAdmin
@@ -123,7 +103,7 @@ const Sidebar = ({ onClose }: SidebarProps) => {
     ...(hasPermission("KPI_LIBRARY_MANAGE")
       ? [
           { to: "/kpi/manage", label: "Goal Management" },
-          { to: "/kpi/library", label: "KPI Library" },
+          { to: "/kpi/library", label: "KRA Library" },
           { to: "/kpi/categories", label: "KPI Categories" },
         ]
       : []),
@@ -133,249 +113,263 @@ const Sidebar = ({ onClose }: SidebarProps) => {
     onClose?.();
   };
 
+  const navItemClass = (isActive: boolean) =>
+    `flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all duration-150 group ${
+      isActive
+        ? "bg-indigo-50/90 text-indigo-700 font-semibold shadow-xs border border-indigo-100/80"
+        : "text-slate-600 font-normal hover:bg-slate-100/80 hover:text-slate-900"
+    }`;
+
+  const iconClass = (isActive: boolean) =>
+    `transition-colors shrink-0 ${
+      isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
+    }`;
+
   return (
     <aside
-      className="flex flex-col h-screen bg-white shrink-0"
-      style={{ width: 200, borderRight: "0.5px solid #E4E6EC" }}
+      className="flex flex-col h-screen bg-white shrink-0 border-r border-slate-200/80 select-none"
+      style={{ width: 240 }}
     >
-      {/* Brand */}
-      <div
-        className="flex items-center justify-between"
-        style={{ padding: "20px 18px", borderBottom: "0.5px solid #E4E6EC" }}
-      >
-        <div className="flex items-center gap-2.25">
-          <div
-            className="flex items-center justify-center text-white shrink-0"
-            style={{ width: 28, height: 28, background: "#1A56DB", borderRadius: 7 }}
-          >
-            <BarChart3 size={14} aria-hidden="true" />
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>EPMS</span>
+      {/* Dailoqa Brand Header */}
+      <div className="flex items-center justify-between px-5 py-4.5 border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <DailoqaLogo size="sm" showTagline={false} />
+          <span className="bg-indigo-50 text-indigo-700 font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-indigo-200/60">
+            PMS
+          </span>
         </div>
-        {/* Close button — mobile only */}
-        <button
-          className="md:hidden flex items-center justify-center rounded-lg transition-colors hover:bg-[#F0F2F8]"
-          style={{ width: 28, height: 28, color: "#5A6070" }}
-          onClick={onClose}
-          aria-label="Close menu"
-        >
-          <X size={16} aria-hidden="true" />
-        </button>
+        {onClose && (
+          <button
+            className="md:hidden flex items-center justify-center rounded-lg p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+            onClick={onClose}
+            aria-label="Close menu"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto" style={{ padding: "20px 10px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {/* Main nav items */}
-          {filteredNav.map((item) => {
-            const isActive = item.end ? location.pathname === item.to : location.pathname.startsWith(item.to);
+      {/* Navigation Sections */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+        {/* Core Intelligence */}
+        <div>
+          <div className="px-3 pb-1.5 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase">
+            Core Intelligence
+          </div>
+          <div className="space-y-0.5">
+            {filteredNav.map((item) => {
+              const isActive = item.end
+                ? location.pathname === item.to
+                : location.pathname.startsWith(item.to);
 
-            return (
+              return (
+                <NavLink
+                  key={item.label}
+                  to={item.to}
+                  className={navItemClass(isActive)}
+                  onClick={handleNavClick}
+                >
+                  <item.icon size={16} className={iconClass(isActive)} />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 360 Feedback Accordion */}
+        <div>
+          <button
+            onClick={() => setFeedback360Open(!feedback360Open)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition-colors group"
+          >
+            <span className="flex items-center gap-2.5 font-normal">
+              <Repeat2 size={16} className="text-slate-400 group-hover:text-slate-600" />
+              360° Multi-Rater
+            </span>
+            <ChevronDown
+              size={14}
+              className={`text-slate-400 transition-transform duration-200 ${
+                feedback360Open ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {feedback360Open && (
+            <div className="ml-5 pl-2.5 mt-1 border-l border-slate-200/80 space-y-0.5">
               <NavLink
-                key={item.label}
-                to={item.to}
-                style={{ padding: "8px 10px" }}
-                className={navCls(isActive)}
+                to="/360-feedback/pending"
+                className={({ isActive }) =>
+                  `block px-2.5 py-1.5 rounded-lg text-[12.5px] transition-colors ${
+                    isActive
+                      ? "text-indigo-700 font-semibold bg-indigo-50/70"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+                  }`
+                }
                 onClick={handleNavClick}
               >
-                <item.icon size={16} aria-hidden="true" />
-                {item.label}
+                Pending 360 Reviews
               </NavLink>
-            );
-          })}
-
-          {/* 360 Feedback accordion */}
-          <div>
-            <button
-              onClick={() => setFeedback360Open(!feedback360Open)}
-              style={{ padding: "8px 10px" }}
-              className="w-full flex items-center justify-between rounded-lg text-[13px] font-normal text-[#5A6070] hover:bg-[#F0F2F8] hover:text-[#111827] transition-colors"
-            >
-              <span className="flex items-center gap-2.25">
-                <Repeat2 size={16} aria-hidden="true" />
-                360° Feedback
-              </span>
-              <ChevronDown
-                size={14}
-                className={`transition-transform duration-200 ${feedback360Open ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {feedback360Open && (
-              <div style={{ paddingLeft: 8, marginTop: 1 }}>
-                {hasPermission("FEEDBACK360_PARTICIPATE") && (
-                  <NavLink
-                    to="/360-feedback/pending"
-                    style={{ padding: "7px 10px" }}
-                    className={({ isActive }) => navCls(isActive)}
-                    onClick={handleNavClick}
-                  >
-                    Feedback Requests
-                  </NavLink>
-                )}
-                {hasPermission("FEEDBACK360_VIEW_REPORT") && (
-                  <NavLink
-                    to="/360-feedback/my-report"
-                    style={{ padding: "7px 10px" }}
-                    className={({ isActive }) => navCls(isActive)}
-                    onClick={handleNavClick}
-                  >
-                    My Report
-                  </NavLink>
-                )}
-                {/* {hasPermission("FEEDBACK360_NOMINATE") && (
-                  <NavLink
-                    to="/360-feedback/nominations"
-                    style={{ padding: "7px 10px" }}
-                    className={({ isActive }) => navCls(isActive)}
-                    onClick={handleNavClick}
-                  >
-                    Nominations
-                  </NavLink>
-                )} */}
-                {hasPermission("FEEDBACK360_MANAGE") && (
+              <NavLink
+                to="/360-feedback/my-report"
+                className={({ isActive }) =>
+                  `block px-2.5 py-1.5 rounded-lg text-[12.5px] transition-colors ${
+                    isActive
+                      ? "text-indigo-700 font-semibold bg-indigo-50/70"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+                  }`
+                }
+                onClick={handleNavClick}
+              >
+                My 360 Feedback Report
+              </NavLink>
+              {(isHR || isAdmin || isManager) && (
+                <>
                   <NavLink
                     to="/360-feedback/admin"
-                    end
-                    style={{ padding: "7px 10px" }}
-                    className={({ isActive }) => navCls(isActive)}
+                    className={({ isActive }) =>
+                      `block px-2.5 py-1.5 rounded-lg text-[12.5px] transition-colors ${
+                        isActive
+                          ? "text-indigo-700 font-semibold bg-indigo-50/70"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+                      }`
+                    }
                     onClick={handleNavClick}
                   >
-                    Admin Panel
+                    360 Cycles & Matrix
                   </NavLink>
-                )}
-
-              </div>
-            )}
-          </div>
-
-          {/* Performance Hub accordion */}
-          <div>
-            <button
-              onClick={() => setPerfOpen(!perfOpen)}
-              style={{ padding: "8px 10px" }}
-              className="w-full flex items-center justify-between rounded-lg text-[13px] font-normal text-[#5A6070] hover:bg-[#F0F2F8] hover:text-[#111827] transition-colors"
-            >
-              <span className="flex items-center gap-2.25">
-                <Target size={16} aria-hidden="true" />
-                KPIs Hub
-              </span>
-              <ChevronDown
-                size={14}
-                className={`transition-transform duration-200 ${perfOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {perfOpen && (
-              <div style={{ paddingLeft: 8, marginTop: 1 }}>
-                {perfSubItems.map((sub) => (
                   <NavLink
-                    key={sub.to}
-                    to={sub.to}
-                    end={sub.end}
-                    style={{ padding: "7px 10px" }}
-                    className={({ isActive }) => navCls(isActive)}
+                    to="/360-feedback/calibration"
+                    className={({ isActive }) =>
+                      `block px-2.5 py-1.5 rounded-lg text-[12.5px] transition-colors ${
+                        isActive
+                          ? "text-indigo-700 font-semibold bg-indigo-50/70"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+                      }`
+                    }
                     onClick={handleNavClick}
                   >
-                    {sub.label}
+                    Calibration Sessions
                   </NavLink>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Management accordion */}
-          {(isAdmin || isHR) && (
-            <div>
-              <button
-                onClick={() => setMgmtOpen(!mgmtOpen)}
-                style={{ padding: "8px 10px" }}
-                className="w-full flex items-center justify-between rounded-lg text-[13px] font-normal text-[#5A6070] hover:bg-[#F0F2F8] hover:text-[#111827] transition-colors"
-              >
-                <span className="flex items-center gap-2.25">
-                  <Building2 size={16} aria-hidden="true" />
-                  Management
-                </span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform ${mgmtOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {mgmtOpen && (
-                <div style={{ paddingLeft: 8, marginTop: 1 }}>
-                  {ADMIN_ITEMS.filter(item => !item.adminOnly || isAdmin).map((item) => (
-                    <NavLink
-                      key={item.label}
-                      to={item.to}
-                      end={item.end}
-                      style={{ padding: "7px 10px" }}
-                      className={({ isActive }) => navCls(isActive)}
-                      onClick={handleNavClick}
-                    >
-                      <item.icon size={16} aria-hidden="true" />
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </div>
+                </>
               )}
             </div>
           )}
         </div>
-      </nav>
 
-      {/* Logout button - moved to New Review position */}
-      <div style={{ padding: "0 10px 10px" }}>
-        <button
-          onClick={(e) => { e.stopPropagation(); logout(); }}
-          className="w-full flex items-center justify-center gap-2.25 text-white text-[13px] font-medium transition-colors"
-          style={{ background: "#DC2626", borderRadius: 8, padding: "8px 14px", border: "none" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#B91C1C"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "#DC2626"; }}
-        >
-          <LogOut size={14} aria-hidden="true" />
-          Logout
-        </button>
-      </div>
-
-      {/* User profile row */}
-      <div
-        className="flex items-center gap-2.5 cursor-pointer hover:bg-[#F0F2F8] transition-colors"
-        style={{ borderTop: "0.5px solid #E4E6EC", padding: "12px 14px" }}
-        onClick={() => { navigate("/profile"); handleNavClick(); }}
-      >
-        <div
-          className="flex items-center justify-center shrink-0 overflow-hidden"
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            background: avatarColor.bg,
-            color: avatarColor.text,
-            fontSize: 11,
-            fontWeight: 500,
-          }}
-        >
-          {user?.profileImage && user.profileImage !== "default.jpg" ? (
-            <img
-              src={`http://localhost:8080${user.profileImage}`}
-              alt={user?.staffName ?? "User"}
-              className="w-full h-full object-cover"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
+        {/* Performance & KRAs Accordion */}
+        <div>
+          <button
+            onClick={() => setPerfOpen(!perfOpen)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition-colors group"
+          >
+            <span className="flex items-center gap-2.5 font-normal">
+              <Target size={16} className="text-slate-400 group-hover:text-slate-600" />
+              KRAs & Objectives
+            </span>
+            <ChevronDown
+              size={14}
+              className={`text-slate-400 transition-transform duration-200 ${
+                perfOpen ? "rotate-180" : ""
+              }`}
             />
-          ) : (
-            user?.staffName?.charAt(0) ?? "U"
+          </button>
+
+          {perfOpen && (
+            <div className="ml-5 pl-2.5 mt-1 border-l border-slate-200/80 space-y-0.5">
+              {perfSubItems.map((sub) => {
+                const isActive = sub.end
+                  ? location.pathname === sub.to
+                  : location.pathname.startsWith(sub.to);
+                return (
+                  <NavLink
+                    key={sub.to}
+                    to={sub.to}
+                    className={`block px-2.5 py-1.5 rounded-lg text-[12.5px] transition-colors ${
+                      isActive
+                        ? "text-indigo-700 font-semibold bg-indigo-50/70"
+                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+                    }`}
+                    onClick={handleNavClick}
+                  >
+                    {sub.label}
+                  </NavLink>
+                );
+              })}
+            </div>
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="truncate" style={{ fontSize: 13, fontWeight: 500, color: "#111827", lineHeight: 1.2 }}>
-            {user?.staffName ?? "User"}
-          </p>
-          <p className="truncate" style={{ fontSize: 11, color: "#9EA3B0", lineHeight: 1.2, marginTop: 2 }}>
-            {user?.positionName ?? ""}
-          </p>
+
+        {/* Governance & Administration */}
+        {(isAdmin || isHR) && (
+          <div>
+            <button
+              onClick={() => setMgmtOpen(!mgmtOpen)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition-colors group"
+            >
+              <span className="flex items-center gap-2.5 font-normal">
+                <Building2 size={16} className="text-slate-400 group-hover:text-slate-600" />
+                Org Governance
+              </span>
+              <ChevronDown
+                size={14}
+                className={`text-slate-400 transition-transform duration-200 ${
+                  mgmtOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {mgmtOpen && (
+              <div className="ml-5 pl-2.5 mt-1 border-l border-slate-200/80 space-y-0.5">
+                {ADMIN_ITEMS.map((item) => {
+                  const isActive = item.end
+                    ? location.pathname === item.to
+                    : location.pathname.startsWith(item.to);
+                  return (
+                    <NavLink
+                      key={item.label}
+                      to={item.to}
+                      className={`block px-2.5 py-1.5 rounded-lg text-[12.5px] transition-colors ${
+                        isActive
+                          ? "text-indigo-700 font-semibold bg-indigo-50/70"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60"
+                      }`}
+                      onClick={handleNavClick}
+                    >
+                      {item.label}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </nav>
+
+      {/* User Footer Profile */}
+      <div className="p-3.5 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200">
+              {user?.staffName?.[0]?.toUpperCase() || "U"}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[12.5px] font-semibold text-slate-800 truncate">
+                {user?.staffName || user?.username || "Authorized User"}
+              </div>
+              <div className="text-[10.5px] font-medium text-slate-500 uppercase tracking-wide truncate">
+                {isAdmin ? "Super Admin" : isHR ? "HR Partner" : isManager ? "Tech Manager" : "Intern"}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            title="Sign Out"
+            aria-label="Sign Out"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </aside>

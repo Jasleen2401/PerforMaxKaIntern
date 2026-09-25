@@ -2,7 +2,7 @@ import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 import type { RootState } from "../app/store";
 
 export const baseQuery = fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api/v1",
+    baseUrl: import.meta.env.VITE_API_BASE_URL || "/api",
     credentials: "include",
     prepareHeaders: (headers, { getState }) => {
         const token = (getState() as RootState).auth.accessToken;

@@ -1,0 +1,165 @@
+from django.urls import path, re_path
+from apps.frontend_compat.views import (
+    ManagerDashboardView,
+    HrDashboardView,
+    AdminDashboardView,
+    EmployeeDashboardView,
+    DepartmentCompatView,
+    DepartmentMembersCompatView,
+    DepartmentHeadcountCompatView,
+    EmployeeCompatView,
+    EmployeeAllCompatView,
+    EmployeeDirectReportsCompatView,
+    EmployeeManagerCompatView,
+    AppraisalCyclesCompatView,
+    AppraisalsMyAssessmentsView,
+    AppraisalsTeamEvaluationsView,
+    AppraisalsByCycleCompatView,
+    AppraisalsByEmployeeAndCycleCompatView,
+    AppraisalsDetailCompatView,
+    AppraisalsScoreBreakdownCompatView,
+    AppraisalsFinalizeCompatView,
+    KpiActiveCycleCompatView,
+    KpiAuditOrgCompatView,
+    KpiAuditTeamCompatView,
+    KpiAuditEmployeeCompatView,
+    ReportDataCompatView,
+    ReportDownloadCompatView,
+    GenericListCompatView,
+    TagsCompatView,
+    FeedbacksCompatView,
+    FeedbackManagerStatsCompatView,
+    FeedbackEmployeeStatsCompatView,
+    FeedbackRepliesCompatView,
+    FeedbackPublishCompatView,
+    MeetingsCompatView,
+    MeetingsManagerStatsCompatView,
+    MeetingsEmployeeStatsCompatView,
+    MeetingsCommentsCompatView,
+    MeetingsActionItemCompatView,
+    MeetingsPublishCompatView,
+    AuditLogsCompatView,
+    AuditSummaryCompatView,
+    AuditStatisticsCompatView,
+    AuditEntityHistoryCompatView,
+    AuditUserActivityCompatView,
+    AuditLogsExportCompatView,
+    PerformanceHistoryPulseCompatView,
+    PerformanceHistoryAllCompatView,
+    Feedback360GenericCompatView,
+)
+
+urlpatterns = [
+    # Dashboards
+    re_path(r'^dashboard/manager/?$', ManagerDashboardView.as_view(), name='compat_dashboard_manager'),
+    re_path(r'^dashboard/hr/?$', HrDashboardView.as_view(), name='compat_dashboard_hr'),
+    re_path(r'^dashboard/admin/?$', AdminDashboardView.as_view(), name='compat_dashboard_admin'),
+    re_path(r'^dashboard/employee/?$', EmployeeDashboardView.as_view(), name='compat_dashboard_employee'),
+
+    # Departments
+    re_path(r'^departments/active/?$', DepartmentCompatView.as_view(), name='compat_departments_active'),
+    re_path(r'^departments/(?P<pk>[^/]+)/members/?$', DepartmentMembersCompatView.as_view(), name='compat_departments_members'),
+    re_path(r'^departments/(?P<pk>[^/]+)/headcount/?$', DepartmentHeadcountCompatView.as_view(), name='compat_departments_headcount'),
+    re_path(r'^departments/(?P<pk>[^/]+)/?$', DepartmentCompatView.as_view(), name='compat_departments_detail'),
+    re_path(r'^departments/?$', DepartmentCompatView.as_view(), name='compat_departments_list'),
+    re_path(r'^org/departments/?$', DepartmentCompatView.as_view(), name='compat_org_departments'),
+
+    # Employees
+    re_path(r'^emp/all/?$', EmployeeAllCompatView.as_view(), name='compat_emp_all'),
+    re_path(r'^emp/search/?$', EmployeeCompatView.as_view(), name='compat_emp_search'),
+    re_path(r'^emp/(?P<pk>[^/]+)/direct-reports/?$', EmployeeDirectReportsCompatView.as_view(), name='compat_emp_direct_reports'),
+    re_path(r'^emp/(?P<pk>[^/]+)/manager/?$', EmployeeManagerCompatView.as_view(), name='compat_emp_manager'),
+    re_path(r'^emp/(?P<pk>[^/]+)/?$', EmployeeCompatView.as_view(), name='compat_emp_detail'),
+    re_path(r'^emp/?$', EmployeeCompatView.as_view(), name='compat_emp_list'),
+
+    # Appraisals & Cycles
+    re_path(r'^appraisal-cycles/active/?$', AppraisalCyclesCompatView.as_view(), {'pk': 'active'}, name='compat_cycles_active'),
+    re_path(r'^appraisal-cycles/(?P<pk>[^/]+)/?$', AppraisalCyclesCompatView.as_view(), name='compat_cycles_detail'),
+    re_path(r'^appraisal-cycles/?$', AppraisalCyclesCompatView.as_view(), name='compat_cycles_list'),
+
+    re_path(r'^appraisals/my-assessments/?$', AppraisalsMyAssessmentsView.as_view(), name='compat_my_assessments'),
+    re_path(r'^appraisals/team-evaluations/?$', AppraisalsTeamEvaluationsView.as_view(), name='compat_team_evaluations'),
+    re_path(r'^appraisals/cycle/(?P<cycleId>[^/]+)/?$', AppraisalsByCycleCompatView.as_view(), name='compat_appraisals_by_cycle'),
+    re_path(r'^appraisals/employee/(?P<employeeId>[^/]+)/cycle/(?P<cycleId>[^/]+)/?$', AppraisalsByEmployeeAndCycleCompatView.as_view(), name='compat_appraisal_employee_cycle'),
+    re_path(r'^appraisals/(?P<pk>[^/]+)/score-breakdown/?$', AppraisalsScoreBreakdownCompatView.as_view(), name='compat_appraisal_score_breakdown'),
+    re_path(r'^appraisals/(?P<pk>[^/]+)/finalize/?$', AppraisalsFinalizeCompatView.as_view(), name='compat_appraisal_finalize'),
+    re_path(r'^appraisals/360/?$', AppraisalsDetailCompatView.as_view(), {'pk': '360'}, name='compat_appraisals_360'),
+    re_path(r'^appraisals/(?P<pk>[^/]+)/?$', AppraisalsDetailCompatView.as_view(), name='compat_appraisal_detail'),
+
+    # Continuous Feedback & Tags
+    re_path(r'^tags/(?P<pk>[^/]+)/?$', TagsCompatView.as_view(), name='compat_tags_detail'),
+    re_path(r'^tags/?$', TagsCompatView.as_view(), name='compat_tags_list'),
+    re_path(r'^feedbacks/manager/(?P<manager_id>[^/]+)/stats/?$', FeedbackManagerStatsCompatView.as_view(), name='compat_feedbacks_mgr_stats'),
+    re_path(r'^feedbacks/employee/(?P<employee_id>[^/]+)/stats/?$', FeedbackEmployeeStatsCompatView.as_view(), name='compat_feedbacks_emp_stats'),
+    re_path(r'^feedbacks/stats/(?P<employee_id>[^/]+)/?$', FeedbackEmployeeStatsCompatView.as_view(), name='compat_feedbacks_profile_stats'),
+    re_path(r'^feedbacks/(?P<pk>[^/]+)/replies/?$', FeedbackRepliesCompatView.as_view(), name='compat_feedbacks_replies'),
+    re_path(r'^feedbacks/(?P<pk>[^/]+)/comments/?$', FeedbackRepliesCompatView.as_view(), name='compat_feedbacks_comments'),
+    re_path(r'^feedbacks/(?P<pk>[^/]+)/publish/?$', FeedbackPublishCompatView.as_view(), name='compat_feedbacks_publish'),
+    re_path(r'^feedbacks/manager/(?P<manager_id>[^/]+)/?$', FeedbacksCompatView.as_view(), name='compat_feedbacks_mgr'),
+    re_path(r'^feedbacks/employee/(?P<employee_id>[^/]+)/?$', FeedbacksCompatView.as_view(), name='compat_feedbacks_emp'),
+    re_path(r'^feedbacks/(?P<pk>[^/]+)/?$', FeedbacksCompatView.as_view(), name='compat_feedbacks_detail'),
+    re_path(r'^feedbacks/?$', FeedbacksCompatView.as_view(), name='compat_feedbacks_list'),
+
+    # 1-on-1 Sync Meetings
+    re_path(r'^meetings/manager/(?P<manager_id>[^/]+)/stats/?$', MeetingsManagerStatsCompatView.as_view(), name='compat_meetings_mgr_stats'),
+    re_path(r'^meetings/employee/(?P<employee_id>[^/]+)/stats/?$', MeetingsEmployeeStatsCompatView.as_view(), name='compat_meetings_emp_stats'),
+    re_path(r'^meetings/(?P<pk>[^/]+)/items/(?P<item_id>[^/]+)/status/?$', MeetingsActionItemCompatView.as_view(), name='compat_meetings_item_status'),
+    re_path(r'^meetings/(?P<pk>[^/]+)/items/(?P<item_id>[^/]+)/reopen/?$', MeetingsActionItemCompatView.as_view(), name='compat_meetings_item_reopen'),
+    re_path(r'^meetings/(?P<pk>[^/]+)/comments/?$', MeetingsCommentsCompatView.as_view(), name='compat_meetings_comments'),
+    re_path(r'^meetings/(?P<pk>[^/]+)/publish/?$', MeetingsPublishCompatView.as_view(), name='compat_meetings_publish'),
+    re_path(r'^meetings/manager/(?P<manager_id>[^/]+)/?$', MeetingsCompatView.as_view(), name='compat_meetings_mgr'),
+    re_path(r'^meetings/employee/(?P<employee_id>[^/]+)/?$', MeetingsCompatView.as_view(), name='compat_meetings_emp'),
+    re_path(r'^meetings/(?P<pk>[^/]+)/?$', MeetingsCompatView.as_view(), name='compat_meetings_detail'),
+    re_path(r'^meetings/?$', MeetingsCompatView.as_view(), name='compat_meetings_list'),
+
+    # Audit Logs
+    re_path(r'^audit-logs/summary/?$', AuditSummaryCompatView.as_view(), name='compat_audit_summary'),
+    re_path(r'^audit-logs/statistics/?$', AuditStatisticsCompatView.as_view(), name='compat_audit_statistics'),
+    re_path(r'^audit-logs/entity/(?P<tableName>[^/]+)/(?P<recordId>[^/]+)/?$', AuditEntityHistoryCompatView.as_view(), name='compat_audit_entity'),
+    re_path(r'^audit-logs/user/(?P<userId>[^/]+)/activity/?$', AuditUserActivityCompatView.as_view(), name='compat_audit_user_activity'),
+    re_path(r'^audit-logs/export/csv/?$', AuditLogsExportCompatView.as_view(), {'fmt': 'csv'}, name='compat_audit_export_csv'),
+    re_path(r'^audit-logs/export/pdf/?$', AuditLogsExportCompatView.as_view(), {'fmt': 'pdf'}, name='compat_audit_export_pdf'),
+    re_path(r'^audit-logs/(?P<pk>[^/]+)/?$', AuditLogsCompatView.as_view(), name='compat_audit_detail'),
+    re_path(r'^audit-logs/?$', AuditLogsCompatView.as_view(), name='compat_audit_list'),
+
+    # Performance History & Pulse
+    re_path(r'^performance-history/meeting-pulse/?$', PerformanceHistoryPulseCompatView.as_view(), name='compat_perf_meeting_pulse'),
+    re_path(r'^performance-history/pulse/?$', PerformanceHistoryPulseCompatView.as_view(), name='compat_perf_pulse'),
+    re_path(r'^performance-history/all/raw/?$', PerformanceHistoryPulseCompatView.as_view(), name='compat_perf_all_raw'),
+    re_path(r'^performance-history/all/?$', PerformanceHistoryAllCompatView.as_view(), name='compat_perf_all'),
+    re_path(r'^performance-history/employee/(?P<employee_id>[^/]+)/raw/?$', PerformanceHistoryPulseCompatView.as_view(), name='compat_perf_emp_raw'),
+    re_path(r'^performance-history/employee/(?P<employee_id>[^/]+)/?$', PerformanceHistoryAllCompatView.as_view(), name='compat_perf_emp'),
+
+    # KPI & Audit
+    re_path(r'^kpi-audit/org/?$', KpiAuditOrgCompatView.as_view(), name='compat_kpi_audit_org'),
+    re_path(r'^kpi-audit/team/?$', KpiAuditTeamCompatView.as_view(), name='compat_kpi_audit_team'),
+    re_path(r'^kpi-audit/employee/(?P<pk>[^/]+)/?$', KpiAuditEmployeeCompatView.as_view(), name='compat_kpi_audit_employee'),
+    re_path(r'^kpi/active-cycle/?$', KpiActiveCycleCompatView.as_view(), name='compat_kpi_active_cycle'),
+
+    # Reports
+    re_path(r'^(?:v1/)?reports/(?P<endpoint>[^/]+)/download/?$', ReportDownloadCompatView.as_view(), name='compat_reports_download'),
+    re_path(r'^(?:v1/)?reports/(?P<endpoint>[^/]+)/?$', ReportDataCompatView.as_view(), name='compat_reports_data'),
+
+    # 360 Feedback & Secondary Hubs
+    re_path(r'^360-feedback/.*$', Feedback360GenericCompatView.as_view(), name='compat_360_feedback'),
+    re_path(r'^feedback/.*$', Feedback360GenericCompatView.as_view(), name='compat_feedback_360'),
+    re_path(r'^scoring-policy.*$', Feedback360GenericCompatView.as_view(), name='compat_scoring_policy'),
+    re_path(r'^competency.*$', Feedback360GenericCompatView.as_view(), name='compat_competency'),
+    re_path(r'^calibration/.*$', Feedback360GenericCompatView.as_view(), name='compat_calibration'),
+
+    # Fallback configuration routes for other navigation items
+    re_path(r'^job-levels.*$', GenericListCompatView.as_view()),
+    re_path(r'^positions.*$', GenericListCompatView.as_view()),
+    re_path(r'^roles.*$', GenericListCompatView.as_view()),
+    re_path(r'^teams.*$', GenericListCompatView.as_view()),
+    re_path(r'^financial-years.*$', GenericListCompatView.as_view()),
+    re_path(r'^performance-categories.*$', GenericListCompatView.as_view()),
+    re_path(r'^categories.*$', GenericListCompatView.as_view()),
+    re_path(r'^appraisal-forms.*$', GenericListCompatView.as_view()),
+    re_path(r'^appraisal-form-sets.*$', GenericListCompatView.as_view()),
+    re_path(r'^kpi/.*$', GenericListCompatView.as_view()),
+    re_path(r'^pip/.*$', GenericListCompatView.as_view()),
+    re_path(r'^idp/.*$', GenericListCompatView.as_view()),
+]
+
+

@@ -1,71 +1,156 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --dark-mode: class;
 
-  /* Primary palette */
-  --color-primary:        #1A56DB;
-  --color-primary-hover:  #1648C0;
-  --color-page-bg:        #F5F6F8;
+  /* Dailoqa Primary Brand Palette */
+  --color-primary:        #4338CA; /* Electric Indigo */
+  --color-primary-hover:  #3730A3;
+  --color-primary-light:  #EEF2FF;
+  
+  --color-brand-primary:   #4338CA;
+  --color-brand-ai:        #3B4BF9;
+  --color-brand-secondary: #0B0F17; /* Dailoqa Obsidian */
+  --color-obsidian:        #0B0F17;
+  
+  --color-page-bg:        #F8FAFC;
   --color-panel-bg:       #FFFFFF;
-  --color-border-default: #E4E6EC;
-  --color-border-subtle:  #F0F2F6;
-  --color-border-hover:   #C8CCE0;
+  --color-border-default: #E2E8F0;
+  --color-border-subtle:  #F1F5F9;
+  --color-border-hover:   #CBD5E1;
 
-  /* Text palette */
-  --color-content-primary:   #111827;
-  --color-content-secondary: #5A6070;
-  --color-content-muted:     #9EA3B0;
-  --color-content-link:      #1A56DB;
+  /* Typography Colors */
+  --color-content-primary:   #0B0F17;
+  --color-content-secondary: #475569;
+  --color-content-muted:     #94A3B8;
+  --color-content-link:      #4338CA;
+  --color-text-title:        #0B0F17;
+  --color-text-body:         #475569;
+  --color-text-muted:        #94A3B8;
 
-  /* Status fills + text */
-  --color-success-fill: #EAF3DE;
-  --color-success-text: #27500A;
-  --color-info-fill:    #EEF3FD;
-  --color-info-text:    #0C447C;
-  --color-warning-fill: #FAEEDA;
-  --color-warning-text: #633806;
-  --color-danger-fill:  #FCEBEB;
-  --color-danger-text:  #791F1F;
-  --color-neutral-fill: #F1EFE8;
-  --color-neutral-text: #444441;
+  /* Dailoqa Status & AI Accents */
+  --color-success-fill: #ECFDF5;
+  --color-success-text: #065F46;
+  --color-info-fill:    #EEF2FF;
+  --color-info-text:    #3730A3;
+  --color-warning-fill: #FFFBEB;
+  --color-warning-text: #92400E;
+  --color-danger-fill:  #FEF2F2;
+  --color-danger-text:  #991B1B;
+  --color-neutral-fill: #F1F5F9;
+  --color-neutral-text: #334155;
 
-  /* Legacy aliases (used by existing Tailwind classes like text-brand-primary) */
-  --color-brand-primary:   #1A56DB;
-  --color-brand-secondary: #5A6070;
-  --color-text-title:      #111827;
-  --color-text-body:       #5A6070;
-  --color-text-muted:      #9EA3B0;
-  --color-surface-base:    #F5F6F8;
-  --color-surface-border:  #E4E6EC;
+  --color-surface-base:    #F8FAFC;
+  --color-surface-border:  #E2E8F0;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 html {
   scroll-behavior: smooth;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 body {
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 13px;
-  color: #111827;
-  background: #F5F6F8;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13.5px;
+  color: #0B0F17;
+  background: #F8FAFC;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dailoqa Design System Utility Classes */
+.dailoqa-gradient {
+  background: linear-gradient(135deg, #0B0F17 0%, #1E1B4B 50%, #312E81 100%);
+}
+
+.dailoqa-gradient-ai {
+  background: linear-gradient(135deg, #4338CA 0%, #3B82F6 100%);
+}
+
+.dailoqa-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 20px -4px rgba(11, 15, 23, 0.05);
+  border-radius: 16px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dailoqa-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 8px 30px -4px rgba(11, 15, 23, 0.08);
+}
+
+.dailoqa-pill {
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dailoqa-btn-primary {
+  background: #0B0F17;
+  color: #FFFFFF;
+  font-weight: 500;
+  border-radius: 12px;
+  padding: 8px 18px;
+  transition: all 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dailoqa-btn-primary:hover {
+  background: #1E293B;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 15, 23, 0.15);
+}
+
+.dailoqa-btn-indigo {
+  background: #4338CA;
+  color: #FFFFFF;
+  font-weight: 500;
+  border-radius: 12px;
+  padding: 8px 18px;
+  transition: all 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dailoqa-btn-indigo:hover {
+  background: #3730A3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(67, 56, 202, 0.25);
+}
+
+.glass-header {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease forwards;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Thin scrollbar matching design system */
-::-webkit-scrollbar        { width: 6px; }
+/* Polished Scrollbar */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: #E4E6EC; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #C8CCE0; }
+::-webkit-scrollbar-thumb  { background: #CBD5E1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }

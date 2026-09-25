@@ -15,7 +15,11 @@ export const Can = ({
   fallback = null,
   children,
 }: CanProps) => {
-  const { hasPermission, hasRole } = useAuth();
+  const { hasPermission, hasRole, isAdmin } = useAuth();
+
+  if (isAdmin) {
+    return <>{children}</>;
+  }
 
   const permOk = permission
     ? hasPermission(permission)
