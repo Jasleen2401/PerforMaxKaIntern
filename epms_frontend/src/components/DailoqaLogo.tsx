@@ -1,4 +1,5 @@
 import React from "react";
+import logoImg from "../assets/logo/Logo.png";
 
 interface DailoqaLogoProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -20,15 +21,24 @@ export const DailoqaLogo: React.FC<DailoqaLogoProps> = ({
   const aiColor = "#4338CA"; // Dailoqa iconic electric indigo
 
   const sizeStyles = {
-    sm: { fontSize: "19px", gap: "6px", dotSize: "5px", subSize: "10px" },
-    md: { fontSize: "24px", gap: "8px", dotSize: "6px", subSize: "11px" },
-    lg: { fontSize: "32px", gap: "10px", dotSize: "8px", subSize: "12px" },
-    xl: { fontSize: "42px", gap: "12px", dotSize: "10px", subSize: "13px" },
+    sm: { fontSize: "19px", gap: "6px", dotSize: "5px", subSize: "10px", imgSize: 24 },
+    md: { fontSize: "24px", gap: "8px", dotSize: "6px", subSize: "11px", imgSize: 30 },
+    lg: { fontSize: "32px", gap: "10px", dotSize: "8px", subSize: "12px", imgSize: 38 },
+    xl: { fontSize: "42px", gap: "12px", dotSize: "10px", subSize: "13px", imgSize: 48 },
   }[size];
 
   return (
     <div className={`inline-flex flex-col select-none ${className}`}>
       <div className="flex items-center" style={{ gap: sizeStyles.gap }}>
+        <img
+          src={logoImg}
+          alt="AI Logo"
+          className="rounded-md object-contain shrink-0"
+          style={{
+            width: sizeStyles.imgSize,
+            height: sizeStyles.imgSize,
+          }}
+        />
         {/* Project Name PERFORMAX with electric indigo AX accent */}
         <div
           className="font-extrabold tracking-[-0.03em] flex items-baseline leading-none"
