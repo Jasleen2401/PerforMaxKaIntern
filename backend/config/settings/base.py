@@ -11,7 +11,8 @@ load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'insecure-default-key-for-dev-only-change-in-prod')
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
-ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',') if host.strip()]
+
 
 # Application definition
 DJANGO_APPS = [
@@ -222,3 +223,13 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@dailoqa.com')
+
+# Dailoqa Corporate Domain & Authentication Configuration
+ALLOWED_EMAIL_DOMAINS = [
+    d.strip().lower()
+    for d in os.getenv('ALLOWED_EMAIL_DOMAINS', 'dailoqa.com,company.com').split(',')
+    if d.strip()
+]
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+PASSWORD_RESET_TIMEOUT_MINUTES = int(os.getenv('PASSWORD_RESET_TIMEOUT_MINUTES', 15))
+

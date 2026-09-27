@@ -38,6 +38,18 @@ const authSlice = createSlice({
       state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
 
+      const pcr = Boolean(
+        action.payload.password_change_required ||
+        action.payload.user?.password_change_required ||
+        action.payload.data?.password_change_required
+      );
+      state.passwordChangeRequired = pcr;
+
+      if (action.payload.user) {
+        state.user = action.payload.user;
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
+      }
+
       localStorage.setItem("accessToken", action.payload.accessToken);
       localStorage.setItem("refreshToken", action.payload.refreshToken);
     },
@@ -50,13 +62,24 @@ const authSlice = createSlice({
     },
     setUser: (state, action: PayloadAction<EmployeeResponse>) => {
       state.user = action.payload;
+      if (action.payload?.password_change_required !== undefined) {
+        state.passwordChangeRequired = Boolean(action.payload.password_change_required);
+      }
       localStorage.setItem("user", JSON.stringify(action.payload));
+    },
+    passwordChangeCompleted: (state) => {
+      state.passwordChangeRequired = false;
+      if (state.user) {
+        state.user.password_change_required = false;
+        localStorage.setItem("user", JSON.stringify(state.user));
+      }
     },
     logout: (state) => {
       state.user = null;
       state.accessToken = null;
       state.refreshToken = null;
       state.isAuthenticated = false;
+      state.passwordChangeRequired = false;
 
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
@@ -65,5 +88,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { loginSuccess, logout, setTokens,setUser } = authSlice.actions;
+export const { loginSuccess, logout, setTokens, setUser, passwordChangeCompleted } = authSlice.actions;
 export default authSlice.reducer;
+

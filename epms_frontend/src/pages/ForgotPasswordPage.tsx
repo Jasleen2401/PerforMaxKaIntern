@@ -1,106 +1,136 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useForgotPasswordMutation } from "../features/auth/authApi";
-import logo from "../assets/logo/Logo.jpg";
-import { Mail, ArrowLeft, Send, AlertCircle, CheckCircle2 } from "lucide-react";
+import { DailoqaLogo } from "../components/DailoqaLogo";
+import { Mail, ArrowLeft, Send, AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
   const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
+    setError("");
+
+    if (!email.trim()) {
+      setError("Please enter your registered Dailoqa corporate email.");
+      return;
+    }
+
     try {
-      await forgotPassword({ email }).unwrap();
-      setMessage({ type: "success", text: "Password reset link sent to your email!" });
-      setEmail("");
+      await forgotPassword({ email: email.trim() }).unwrap();
+      setSubmitted(true);
     } catch (err: any) {
-      setMessage({ type: "error", text: "Failed to send reset link. Please try again." });
+      // Even on failure, to protect against account enumeration, show generic guidance
+      // unless it's a domain/network failure
+      if (err?.status === "FETCH_ERROR" || err?.status === 502) {
+        setError("Unable to connect to authentication server. Please check your network.");
+      } else {
+        setSubmitted(true);
+      }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-10 px-4" style={{ background: "#F5F6F8" }}>
-      <div className="w-full max-w-sm animate-fade-in">
-        {/* Brand */}
-        <div className="flex flex-col items-center mb-6">
-          <div style={{ background: "#FFFFFF", border: "0.5px solid #E4E6EC", borderRadius: 12, padding: "10px", marginBottom: 14 }}>
-            <img src={logo} alt="EPMS Logo" className="w-10 h-10 object-contain" />
-          </div>
-          <p style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>EPMS Global</p>
-          <p style={{ fontSize: 12, color: "#9EA3B0", marginTop: 2 }}>Employee Performance Management System</p>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      <div className="w-full max-w-md animate-fade-in">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <DailoqaLogo size="md" showTagline={true} taglineText="Performance Intelligence" />
         </div>
 
         {/* Card */}
-        <div style={{ background: "#FFFFFF", border: "0.5px solid #E4E6EC", borderRadius: 12, padding: "24px" }}>
-          <h2 style={{ fontSize: 18, fontWeight: 500, color: "#111827", marginBottom: 4 }}>Forgot password</h2>
-          <p style={{ fontSize: 13, color: "#9EA3B0", marginBottom: 20 }}>
-            Enter your email and we'll send you a link to reset your password.
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-8 shadow-xs">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+              <ShieldAlert size={20} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">Forgot Password</h1>
+              <p className="text-xs text-slate-500">Corporate Account Recovery</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">
+            Enter your approved Dailoqa email address. If an account is registered, you will receive a secure password reset link.
           </p>
 
-          {message && (
-            <div className="flex items-center gap-2 mb-4" style={{
-              background: message.type === "success" ? "#EAF3DE" : "#FCEBEB",
-              border: `0.5px solid ${message.type === "success" ? "#B8DCA0" : "#F5C2C2"}`,
-              borderRadius: 8, padding: "10px 12px",
-            }}>
-              {message.type === "success"
-                ? <CheckCircle2 size={14} style={{ color: "#27500A", flexShrink: 0 }} />
-                : <AlertCircle size={14} style={{ color: "#791F1F", flexShrink: 0 }} />}
-              <span style={{ fontSize: 12, color: message.type === "success" ? "#27500A" : "#791F1F" }}>{message.text}</span>
+          {/* Success Message Banner */}
+          {submitted ? (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 space-y-2 mb-6 animate-fade-in">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                <span>Reset Instructions Dispatched</span>
+              </div>
+              <p className="text-slate-600 leading-relaxed">
+                If an active account exists for <strong>{email}</strong>, we have sent a secure password reset link. Please check your inbox and follow the instructions.
+              </p>
             </div>
+          ) : (
+            <>
+              {error && (
+                <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 animate-fade-in">
+                  <AlertCircle size={16} className="shrink-0 text-rose-600" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Corporate Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="name@dailoqa.com"
+                      className="w-full bg-slate-50/80 focus:bg-white text-sm text-slate-900 pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all outline-none"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full mt-2 dailoqa-btn-primary py-3 text-sm font-semibold rounded-xl flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Sending Instructions...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={15} />
+                      Send Reset Link
+                    </>
+                  )}
+                </button>
+              </form>
+            </>
           )}
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" style={{ display: "block", fontSize: 11, fontWeight: 500, color: "#9EA3B0", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>
-                Work email address
-              </label>
-              <div className="relative">
-                <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#9EA3B0" }} />
-                <input
-                  id="email" type="email" required placeholder="name@company.com"
-                  className="block w-full pl-10 pr-4 py-2.5 text-[13px] outline-none transition-colors"
-                  style={{ background: "#F5F6F8", border: "0.5px solid #E0E2E8", borderRadius: 8, color: "#111827" }}
-                  value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit" disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              style={{ background: "#1A56DB", color: "#FFFFFF", borderRadius: 8, padding: "9px 14px", fontSize: 13, fontWeight: 500, border: "none" }}
-              onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = "#1648C0"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "#1A56DB"; }}
+          <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} />
-                  Sending…
-                </>
-              ) : (
-                <><Send size={14} aria-hidden="true" /> Send reset link</>
-              )}
-            </button>
-          </form>
-
-          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "0.5px solid #E4E6EC" }}>
-            <Link to="/login" className="flex items-center justify-center gap-2 group" style={{ fontSize: 13, color: "#1A56DB" }}>
-              <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-              Back to login
+              <ArrowLeft size={14} />
+              Return to Login
             </Link>
+            <span className="text-[11px] text-slate-400">Dailoqa EPMS Security</span>
           </div>
         </div>
 
-        <p className="text-center mt-6" style={{ fontSize: 11, color: "#9EA3B0" }}>
-          © {new Date().getFullYear()} EPMS Global
-          {" · "}
-          <a href="#" style={{ color: "#9EA3B0" }}>Privacy</a>
-          {" · "}
-          <a href="#" style={{ color: "#9EA3B0" }}>Terms</a>
+        <p className="text-center mt-6 text-xs text-slate-400">
+          &copy; {new Date().getFullYear()} Dailoqa Enterprise Performance Management
         </p>
       </div>
     </div>

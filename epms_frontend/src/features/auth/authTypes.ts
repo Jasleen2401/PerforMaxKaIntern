@@ -8,6 +8,9 @@ export interface AuthRequest{
 export interface AuthResponse{
     accessToken: string;
     refreshToken: string;
+    password_change_required?: boolean;
+    user?: any;
+    data?: any;
 }
 
 export interface RefreshTokenRequest{
@@ -19,6 +22,7 @@ export interface AuthState{
     accessToken: string | null;
     refreshToken: string | null;
     isAuthenticated: boolean;
+    passwordChangeRequired?: boolean;
 }
 
 export interface ForgotPasswordRequest {
@@ -27,5 +31,17 @@ export interface ForgotPasswordRequest {
 
 export interface ResetPasswordRequest {
     token: string;
-    newPassword: string;
+    newPassword?: string;
+    new_password?: string;
+    confirmPassword?: string;
+    confirm_password?: string;
 }
+
+export interface ChangePasswordPayload {
+    old_password?: string;
+    oldPassword?: string;
+    new_password?: string;
+    newPassword?: string;
+    confirm_password?: string;
+    confirmPassword?: string;
+}

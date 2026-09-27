@@ -42,10 +42,21 @@ const ProtectedRoute = ({
     );
   }
 
+  // Force first-time password rotation before allowing any other application functionality
+  const requiresPasswordChange = Boolean(
+    (user as any)?.password_change_required ||
+    (user as any)?.user?.password_change_required
+  );
+
+  if (requiresPasswordChange && location.pathname !== "/change-password") {
+    return <Navigate to="/change-password" replace />;
+  }
+
   // Admin has full unrestricted access across all routes
   if (isAdmin) {
     return <Outlet />;
   }
+
 
   // Role check
   if (allowedRoles && !hasAnyRole(allowedRoles)) {

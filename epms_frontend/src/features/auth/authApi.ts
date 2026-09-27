@@ -6,7 +6,9 @@ import type {
   RefreshTokenRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  ChangePasswordPayload,
 } from "./authTypes";
+
 import type { EmployeeResponse } from "../employee/employeeTypes";
 
 import { setUser } from "./authSlice";
@@ -76,6 +78,14 @@ export const authApi = api.injectEndpoints({
         method: "POST",
       }),
     }),
+    changePassword: builder.mutation<{ code: number; message: string; data?: any }, ChangePasswordPayload>({
+      query: (body) => ({
+        url: "/auth/change-password",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Profile"],
+    }),
   }),
 });
 
@@ -89,4 +99,6 @@ export const {
   useResetPasswordMutation,
   useValidateTokenQuery,
   useRevokeSessionsMutation,
+  useChangePasswordMutation,
 } = authApi;
+

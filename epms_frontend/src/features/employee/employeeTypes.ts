@@ -162,4 +162,7 @@ export interface EmployeeResponse {
   directManagerName?: string;
   roles: string[];
   permissions: string[];
+  password_change_required?: boolean;
+  password_changed_at?: string | null;
 }
+
