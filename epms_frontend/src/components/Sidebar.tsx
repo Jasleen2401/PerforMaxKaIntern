@@ -69,13 +69,15 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ onClose }: SidebarProps) => {
-  const { logout, isAdmin, isHR, isManager, user, hasPermission, hasRole } = useAuth();
+  const { logout, isAdmin, isHR, isManager, isIntern, user, hasPermission, hasRole } = useAuth();
   const location = useLocation();
   const [mgmtOpen, setMgmtOpen] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
   const [feedback360Open, setFeedback360Open] = useState(false);
 
-  const filteredNav = NAV_ITEMS.filter((item) => {
+  const isInternUser = isIntern || (!isAdmin && !isHR && !isManager);
+
+  const baseNav = NAV_ITEMS.filter((item) => {
     switch (item.label) {
       case "Performance Pulse":   return hasPermission("REPORT_VIEW_ALL");
       case "Team Pulse":          return hasPermission("APPRAISAL_VIEW_TEAM") && !isAdmin && !isHR;
@@ -87,6 +89,26 @@ const Sidebar = ({ onClose }: SidebarProps) => {
       case "System Audit Logs":   return isAdmin || hasRole("AUDIT_VIEWER");
       default:                    return true;
     }
+  });
+
+  const filteredNav = baseNav.flatMap((item: NavItem): NavItem[] => {
+    if (item.to === "/dashboard") {
+      const adjusted: NavItem = {
+        ...item,
+        label: isInternUser ? "Intern Dashboard" : item.label,
+      };
+      if (isInternUser) {
+        const portalItem: NavItem = {
+          label: "Intern Learning Portal",
+          to: "/intern",
+          icon: GraduationCap,
+          end: true,
+        };
+        return [adjusted, portalItem];
+      }
+      return [adjusted];
+    }
+    return [item];
   });
 
   const perfSubItems: Array<{ to: string; label: string; end?: boolean }> = [

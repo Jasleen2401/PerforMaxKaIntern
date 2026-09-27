@@ -18,7 +18,7 @@ import {
 import { toast } from "react-toastify";
 
 const DEMO_ACCOUNTS = [
-  { role: "Super Admin", email: "admin@company.com", pass: "Admin@123", badge: "Full Access" },
+  { role: "Super Admin", email: "admin@company.com", pass: "AdminPassword123!", badge: "Full Access" },
   { role: "HR Partner", email: "sarah.hr@company.com", pass: "SarahPassword123!", badge: "HR Ops" },
   { role: "Tech Manager", email: "marcus.tech@company.com", pass: "MarcusPassword123!", badge: "Evaluator" },
   { role: "Intern", email: "alex.dev@company.com", pass: "AlexPassword123!", badge: "Self-Review" },
@@ -64,11 +64,17 @@ const LoginPage = () => {
       dispatch(loginSuccess(response));
       navigate(from, { replace: true });
     } catch (err: any) {
-      const msg =
+      let msg =
         err?.data?.detail ||
         err?.data?.message ||
-        err?.message ||
-        "Invalid credentials. Please try again.";
+        err?.message;
+      if (!msg || err?.status === 502 || err?.status === "FETCH_ERROR") {
+        if (err?.status === 502 || err?.status === "FETCH_ERROR") {
+          msg = "Unable to connect to authentication server. Please ensure backend is running.";
+        } else {
+          msg = "Invalid credentials. Please try again.";
+        }
+      }
       setError(msg);
     }
   };

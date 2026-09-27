@@ -9,6 +9,8 @@ import type {
 } from "./authTypes";
 import type { EmployeeResponse } from "../employee/employeeTypes";
 
+import { setUser } from "./authSlice";
+
 export const authApi = api.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, AuthRequest>({
@@ -31,6 +33,12 @@ export const authApi = api.injectEndpoints({
       query: () => "/auth/me",
       transformResponse: (res: any) => res?.data ?? res,
       providesTags: ["Profile"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(setUser(data));
+        } catch {}
+      },
     }),
     unlockEmployee: builder.mutation<void, number>({
       query: (employeeId) => ({

@@ -14,9 +14,11 @@ export const useAuth = () => {
     (state: RootState) => state.auth,
   );
 
-  const { isLoading: isLoadingUser } = useGetMeQuery(undefined, {
-    skip: !accessToken || !!user,
+  const { data: meUser, isLoading: isLoadingUser } = useGetMeQuery(undefined, {
+    skip: !accessToken,
   });
+
+  const currentUser = user || meUser;
 
   const { data: cycleResponse, isLoading: isLoadingCycle, error: cycleError } = useGetActiveCycleQuery(undefined, {
     skip: !isAuthenticated,
@@ -35,37 +37,37 @@ export const useAuth = () => {
   };
 
   const isAdmin = Boolean(
-    user && (
-      user.roles?.some(r => ["ADMIN", "SUPER_ADMIN", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"].includes(normalizeRole(r))) ||
-      ["ADMIN", "SUPER_ADMIN"].includes(normalizeRole(user.role || "")) ||
-      (user as any).is_superuser === true ||
-      user.username?.toLowerCase() === "admin"
+    currentUser && (
+      currentUser.roles?.some(r => ["ADMIN", "SUPER_ADMIN", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"].includes(normalizeRole(r))) ||
+      ["ADMIN", "SUPER_ADMIN"].includes(normalizeRole(currentUser.role || "")) ||
+      (currentUser as any).is_superuser === true ||
+      currentUser.username?.toLowerCase() === "admin"
     )
   );
 
   const hasRole = (role: string) => {
-    if (!user) return false;
+    if (!currentUser) return false;
     const norm = normalizeRole(role);
-    if (isAdmin && (norm === "ADMIN" || norm === "SUPER_ADMIN" || norm === "HR" || norm === "MANAGER" || norm === "EMPLOYEE")) return true;
-    if (user.role && normalizeRole(user.role) === norm) return true;
-    if (user.roles && user.roles.map(normalizeRole).includes(norm)) return true;
+    if (isAdmin && (norm === "ADMIN" || norm === "SUPER_ADMIN" || norm === "HR" || norm === "MANAGER" || norm === "EMPLOYEE" || norm === "INTERN")) return true;
+    if (currentUser.role && normalizeRole(currentUser.role) === norm) return true;
+    if (currentUser.roles && currentUser.roles.map(normalizeRole).includes(norm)) return true;
     return false;
   };
 
   const hasAnyRole = (roles: string[]) => {
-    if (!user) return false;
+    if (!currentUser) return false;
     if (isAdmin) return true;
     return roles.some(role => hasRole(role));
   };
 
   const hasPermission = (permission: string) => {
     if (isAdmin) return true;
-    if (!user || !user.permissions) return false;
-    return user.permissions.includes(permission);
+    if (!currentUser || !currentUser.permissions) return false;
+    return currentUser.permissions.includes(permission);
   };
 
   return {
-    user,
+    user: currentUser,
     isAuthenticated,
     accessToken,
     refreshToken,
@@ -76,14 +78,15 @@ export const useAuth = () => {
     isAdmin,
     isManager: isAdmin || hasRole("MANAGER"),
     isHR: isAdmin || hasRole("HR"),
-    isEmployee: isAdmin || hasRole("EMPLOYEE"),
+    isEmployee: isAdmin || hasRole("EMPLOYEE") || hasRole("INTERN"),
+    isIntern: hasRole("INTERN") || (currentUser ? (!isAdmin && !hasRole("MANAGER") && !hasRole("HR")) : false),
     // ABAC Helpers - Admin has top seniority and passes all rank checks
-    isSenior: isAdmin ? true : (user ? user.levelRank <= 4 : false),
-    isJunior: isAdmin ? false : (user ? user.levelRank >= 7 : false),
-    isTopManagement: isAdmin ? true : (user ? user.levelRank <= 3 : false),   // L01–L03: Chairman, CEO, COO, ED, GM
-    isDeptHead: isAdmin ? true : (user ? user.levelRank === 4 : false),       // L04: Dept heads & senior officers
-    isMidLevel: isAdmin ? true : (user ? (user.levelRank >= 5 && user.levelRank <= 6) : false), // L05–L06: Managers, team leads
-    isOperational: isAdmin ? true : (user ? user.levelRank >= 7 : false),     // L07–L09: Juniors, OJT, support staff
+    isSenior: isAdmin ? true : (currentUser ? currentUser.levelRank <= 4 : false),
+    isJunior: isAdmin ? false : (currentUser ? currentUser.levelRank >= 7 : false),
+    isTopManagement: isAdmin ? true : (currentUser ? currentUser.levelRank <= 3 : false),   // L01–L03: Chairman, CEO, COO, ED, GM
+    isDeptHead: isAdmin ? true : (currentUser ? currentUser.levelRank === 4 : false),       // L04: Dept heads & senior officers
+    isMidLevel: isAdmin ? true : (currentUser ? (currentUser.levelRank >= 5 && currentUser.levelRank <= 6) : false), // L05–L06: Managers, team leads
+    isOperational: isAdmin ? true : (currentUser ? currentUser.levelRank >= 7 : false),     // L07–L09: Juniors, OJT, support staff
     // Cycle Info
     activeCycleId: cycleResponse?.data?.cycleId,
     activeCycleName: cycleResponse?.data?.cycleName || 'No Active Cycle',

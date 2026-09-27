@@ -107,6 +107,40 @@ export interface DashboardTask {
   priority: string;
 }
 
+export interface InternScorecardResponse {
+  totalGoals: number;
+  completedGoals: number;
+  averageProgress: number;
+  activeAppraisalStatus: string;
+  publishedScore: number | null;
+}
+
+export interface InternGoalItem {
+  id: string;
+  title: string;
+  description: string;
+  progress: number;
+  completionPercentage: number;
+  status: string;
+  priority: string;
+  dueDate: string | null;
+  cycleName: string;
+  assignedByName?: string | null;
+}
+
+export interface InternAppraisalItem {
+  id: string;
+  cycleName: string;
+  appraisalType: string;
+  status: string;
+  overallScore: number | null;
+  selfScore: number | null;
+  managerScore: number | null;
+  reviewerComments: string | null;
+  finalComments: string | null;
+  published: boolean;
+}
+
 export interface ManagerDashboardResponse {
   teamSize: number;
   reviewsCompleted: number;

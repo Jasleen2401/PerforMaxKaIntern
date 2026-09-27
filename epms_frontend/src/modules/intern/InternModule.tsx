@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Award, Compass, FileText, UserCheck } from "lucide-react";
+import { Award, Compass, FileText, UserCheck, LayoutDashboard } from "lucide-react";
 
 export const InternModule = () => {
   return (
@@ -20,7 +20,13 @@ export const InternModule = () => {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <Link to="/dashboard" className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-amber-300 shadow-xs hover:shadow-md transition-all group">
+          <LayoutDashboard className="text-amber-500 mb-3" size={24} />
+          <h3 className="font-semibold text-slate-900 group-hover:text-amber-600">Intern Dashboard</h3>
+          <p className="text-xs text-slate-500 mt-1">Personal performance score, KPI completion, and real-time task tracker.</p>
+        </Link>
+
         <Link to="/kpi/my" className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-amber-300 shadow-xs hover:shadow-md transition-all group">
           <Compass className="text-amber-500 mb-3" size={24} />
           <h3 className="font-semibold text-slate-900 group-hover:text-amber-600">My Goals & Progress</h3>
