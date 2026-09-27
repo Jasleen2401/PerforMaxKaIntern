@@ -12,6 +12,11 @@ Welcome to the **Intern Workspace**. This folder contains everything you need to
 
 ---
 
+## 📦 Consolidated Intern Module Files
+All files created for the Intern Module are also consolidated into the root directory: **[`/intern_module/`](file:///c:/Users/jasle/PerforMax/intern_module)**.
+
+---
+
 ## 🛠️ Your Code Locations
 
 ### 1. Frontend Development:
