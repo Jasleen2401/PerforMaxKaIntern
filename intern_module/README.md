@@ -31,7 +31,9 @@ This directory consolidates all backend, frontend, documentation, migrations, da
 | 21 | **View Published Areas for Improvement** | ✅ Implemented | Dedicated recommendations panel highlighting mentor-guided technical growth areas |
 | 22 | **Reply to Mentor Comments on Published Feedback** | ✅ Implemented | Interactive feedback reply section allowing intern response to published evaluations |
 | 23 | **View Deadlines and Pending Tasks** | ✅ Implemented | Chronological deadlines tracker for tasks, goal milestones, and self-evaluation cutoff |
-| 24 | **Removed Unnecessary Features** | ✅ Cleaned | Eliminated confusing corporate PIP alert, manager report downloads, and irrelevant multi-year trend charts |
+| 24 | **Removed Unnecessary Features** | ✅ Cleaned | Eliminated confusing corporate PIP alert, 360 multi-rater, multi-year charts |
+| 25 | **Flexible Performance Assessment Scoring** | ✅ Implemented | Dynamic HR evaluation parameters & weightages ($Goals\% + Manager\% + Self\% = 100\%$) |
+| 26 | **HR Scoring Parameters & Criteria Studio** | ✅ Implemented | Dedicated HR UI to configure custom parameters, weights, normalize, and live simulate scores |
 
 ---
 
@@ -44,25 +46,37 @@ intern_module/
 │   └── INTERN_ARCHITECTURE.md                         # Complete architectural & API specification
 ├── backend/
 │   ├── apps/
-│   │   └── intern/
-│   │       ├── __init__.py                            # Module package init
-│   │       ├── models.py                              # InternTask, InternGoalComment, InternSelfAppraisal, InternFeedbackReply
-│   │       ├── migrations/
-│   │       │   └── 0001_initial.py                    # Applied database migration
-│   │       ├── urls.py                                # Dedicated /api/intern/* endpoints
-│   │       └── views.py                               # Comprehensive REST API views for all 23 features
+│   │   ├── intern/
+│   │   │   ├── __init__.py                            # Module package init
+│   │   │   ├── models.py                              # InternTask, InternGoalComment, InternSelfAppraisal, InternFeedbackReply
+│   │   │   ├── migrations/
+│   │   │   │   └── 0001_initial.py                    # Applied database migration
+│   │   │   ├── urls.py                                # Dedicated /api/intern/* endpoints
+│   │   │   └── views.py                               # Comprehensive REST API views for all 23 features + dynamic weights
+│   │   ├── performance/
+│   │   │   ├── models.py                              # Dynamic weights & cycle-specific criteria models
+│   │   │   ├── serializers.py                         # Scoring parameters & criteria serializers
+│   │   │   ├── views.py                               # Scoring parameters HR endpoints & actions
+│   │   │   ├── tests.py                               # Unit tests for flexible scoring calculation
+│   │   │   ├── migrations/                            # AlterEvaluationCriterion migrations
+│   │   │   └── services/
+│   │   │       └── scoring.py                         # Dynamic ScoringService engine
+│   │   └── frontend_compat_views.py                   # Frontend score breakdown adapter
 │   ├── seed_scripts/
 │   │   ├── seed_intern_pms.py                         # Full DB seed: cycles, goals, criteria, evidence, appraisals
 │   │   └── seed_dailoqa_interns.py                    # Intern accounts, batches, and credentials
-│   └── tests_intern_dashboard.py                      # 10 automated test cases verifying all 23 features
+│   └── tests_intern_dashboard.py                      # 10 automated test cases verifying all features
 └── frontend/
     ├── modules/
     │   └── InternModule.tsx                           # Dedicated Intern Portal navigation hub
     ├── pages/
-    │   └── EmployeeDashboard.tsx                      # Focused, feature-complete Intern Dashboard (23 features)
+    │   ├── EmployeeDashboard.tsx                      # Focused Intern Dashboard + HR Parameters & Weightage Matrix
+    │   └── appraisal/
+    │       ├── PerformanceCategoryManagement.tsx      # HR Evaluation Parameters & Weightages Studio
+    │       └── CreateCycle.tsx                        # Cycle creator with dynamic weight distributions
     ├── features/
-    │   ├── dashboardApi.ts                            # RTK Query hooks for overview, goals, tasks, evidence, appraisal
-    │   ├── dashboardTypes.ts                          # Comprehensive TypeScript definitions for all intern models
+    │   ├── dashboardApi.ts                            # RTK Query hooks for scoring parameters & intern APIs
+    │   ├── dashboardTypes.ts                          # TypeScript definitions for scoring weights & parameters
     │   └── authApi.ts                                 # Profile and authentication endpoints
     ├── components/
     │   └── Sidebar.tsx                                # Role-aware sidebar navigation tailored for Intern role

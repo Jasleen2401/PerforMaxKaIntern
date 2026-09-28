@@ -124,6 +124,21 @@ export const dashboardApi = api.injectEndpoints({
       transformResponse: (res: any) => res?.data ?? res,
       providesTags: ["Appraisal"],
     }),
+
+    // HR Flexible Scoring Parameters & Weightages
+    getScoringParameters: builder.query<any, string | void>({
+      query: (cycleId) => cycleId ? `/performance/cycles/${cycleId}/scoring-parameters/` : "/performance/cycles/scoring-parameters/",
+      transformResponse: (res: any) => res?.data ?? res,
+      providesTags: ["Appraisal"],
+    }),
+    updateScoringParameters: builder.mutation<any, { cycleId?: string; componentWeights?: any; evaluationParameters?: any[]; deleteParameterIds?: string[]; recalculate?: boolean }>({
+      query: ({ cycleId, ...body }) => ({
+        url: cycleId ? `/performance/cycles/${cycleId}/scoring-parameters/` : "/performance/cycles/scoring-parameters/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Appraisal", "Profile", "GoalSet"],
+    }),
   }),
 });
 
@@ -146,4 +161,6 @@ export const {
   useGetInternPublishedFeedbackQuery,
   useReplyToMentorFeedbackMutation,
   useGetInternAppraisalsQuery,
+  useGetScoringParametersQuery,
+  useUpdateScoringParametersMutation,
 } = dashboardApi;

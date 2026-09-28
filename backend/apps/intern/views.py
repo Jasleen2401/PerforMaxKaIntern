@@ -14,6 +14,7 @@ from apps.evidence.models import EvidenceSubmission
 from apps.performance.models import (
     PerformanceCycle, Appraisal, AppraisalType, AppraisalStatus, CycleStatus
 )
+from apps.performance.services.scoring import ScoringService
 from .models import (
     InternTask, TaskCategory, TaskPriority,
     InternGoalComment, InternSelfAppraisalSubmission, InternFeedbackReply
@@ -322,7 +323,15 @@ class InternOverviewView(APIView):
         })
         deadlines.sort(key=lambda x: x['daysLeft'])
 
-        # 5. Published Results & Classification
+        # 5. Published Results & Classification with flexible HR parameters
+        calc_score = ScoringService.calculate_cycle_score(profile, cycle)
+        weight_dist = calc_score.get('weight_distribution', {
+            'goals_and_kpis': 40.0,
+            'manager_evaluation': 40.0,
+            'self_assessment': 20.0
+        })
+        eval_params = calc_score.get('evaluation_parameters', [])
+
         published_appraisal = Appraisal.objects.filter(
             employee=profile,
             status=AppraisalStatus.PUBLISHED
@@ -330,11 +339,14 @@ class InternOverviewView(APIView):
 
         published_results = None
         if published_appraisal:
-            score = float(published_appraisal.overall_score) if published_appraisal.overall_score is not None else 92.5
+            score = float(published_appraisal.overall_score) if published_appraisal.overall_score is not None else float(calc_score.get('overall_score', 92.5))
             published_results = {
                 'isPublished': True,
                 'overallScore': score,
                 'classification': get_performance_classification(score),
+                'weightDistribution': weight_dist,
+                'evaluationParameters': eval_params,
+                'scoreBreakdown': calc_score.get('breakdown', {}),
                 'reviewerComments': published_appraisal.reviewer_comments or "Demonstrated exceptional competence and high-quality deliverables throughout the evaluation cycle.",
                 'finalComments': published_appraisal.final_comments or "HR Committee verified: Consistently exceeds benchmarks for intern cohort.",
                 'areasForImprovement': [
@@ -350,6 +362,9 @@ class InternOverviewView(APIView):
                 'isPublished': False,
                 'overallScore': None,
                 'classification': None,
+                'weightDistribution': weight_dist,
+                'evaluationParameters': eval_params,
+                'scoreBreakdown': calc_score.get('breakdown', {}),
                 'reviewerComments': None,
                 'finalComments': None,
                 'areasForImprovement': [],
@@ -368,7 +383,9 @@ class InternOverviewView(APIView):
                     'pendingTasksCount': pending_tasks_count,
                     'upcomingDeadlinesCount': len(deadlines),
                     'publishedScore': published_results['overallScore'] if published_results['isPublished'] else None,
-                    'performanceClassification': published_results['classification'] if published_results['isPublished'] else None
+                    'performanceClassification': published_results['classification'] if published_results['isPublished'] else None,
+                    'weightDistribution': weight_dist,
+                    'evaluationParameters': eval_params
                 },
                 'mentor': mentor_info,
                 'cycle': cycle_info,
@@ -874,6 +891,15 @@ class InternPublishedFeedbackView(APIView):
         score = float(published_appraisal.overall_score) if published_appraisal.overall_score is not None else 92.5
         classification = get_performance_classification(score)
 
+        # Retrieve flexible scoring parameters for published appraisal cycle
+        calc_score = ScoringService.calculate_cycle_score(profile, published_appraisal.cycle)
+        weight_dist = calc_score.get('weight_distribution', {
+            'goals_and_kpis': 40.0,
+            'manager_evaluation': 40.0,
+            'self_assessment': 20.0
+        })
+        eval_params = calc_score.get('evaluation_parameters', [])
+
         # Retrieve intern replies
         replies = InternFeedbackReply.objects.filter(intern=profile, appraisal=published_appraisal).order_by('created_at')
         replies_data = [{
@@ -894,6 +920,9 @@ class InternPublishedFeedbackView(APIView):
                 'cycleName': published_appraisal.cycle.name if published_appraisal.cycle else 'Active Evaluation Cycle',
                 'overallScore': score,
                 'performanceClassification': classification,
+                'weightDistribution': weight_dist,
+                'evaluationParameters': eval_params,
+                'scoreBreakdown': calc_score.get('breakdown', {}),
                 'publishedAt': str(published_appraisal.published_at or published_appraisal.updated_at),
                 'mentorName': mentor_name,
                 'mentorFeedback': published_appraisal.reviewer_comments or "Outstanding performance and proactive milestone delivery.",

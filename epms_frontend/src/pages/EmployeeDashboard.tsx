@@ -6,7 +6,7 @@ import {
   ShieldCheck, ArrowRight, Sparkles, FolderGit2, Calendar,
   AlertCircle, RefreshCw, Briefcase, Mail, Hash, UserCheck,
   Send, UploadCloud, Paperclip, Link as LinkIcon, Check,
-  ChevronDown, ChevronUp, Info, Edit3
+  ChevronDown, ChevronUp, Info, Edit3, Sliders
 } from 'lucide-react';
 import {
   useGetInternOverviewQuery,
@@ -146,6 +146,20 @@ const EmployeeDashboard: React.FC = () => {
   const cycle = overviewData?.cycle;
   const deadlines = overviewData?.deadlines || [];
   const publishedResults = overviewData?.publishedResults;
+
+  const [showWeightDetails, setShowWeightDetails] = useState(false);
+  const weightDist = publishedResults?.weightDistribution || scorecard?.weightDistribution || {
+    goals_and_kpis: 40,
+    manager_evaluation: 40,
+    self_assessment: 20
+  };
+  const evalParams = publishedResults?.evaluationParameters || scorecard?.evaluationParameters || [
+    { id: '1', name: 'Technical Competence', weight: 25, maximumScore: 100, description: 'Code quality, architectural design, debugging skills' },
+    { id: '2', name: 'Problem Solving & Ownership', weight: 25, maximumScore: 100, description: 'Analytical approach, autonomy, root-cause fixes' },
+    { id: '3', name: 'Code Quality & Testing', weight: 20, maximumScore: 100, description: 'Unit/integration testing, clean code conventions' },
+    { id: '4', name: 'Collaboration & Communication', weight: 15, maximumScore: 100, description: 'Team syncs, PR reviews, documentation' },
+    { id: '5', name: 'Velocity & Timeliness', weight: 15, maximumScore: 100, description: 'Meeting milestone sprint deadlines reliably' },
+  ];
 
   // Handlers
   const handleUpdateProgress = async (goalId: string, newProgress: number) => {
@@ -557,6 +571,92 @@ const EmployeeDashboard: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* HR-Configured Evaluation Parameters & Weightages Card */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+                  <Sliders size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    HR Evaluation Parameters & Weightage Matrix
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Transparent assessment criteria and component weights decided by HR for your cohort.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowWeightDetails(!showWeightDetails)}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-100/70 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>{showWeightDetails ? 'Collapse Parameters' : 'View Full Metric Breakdown'}</span>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${showWeightDetails ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* 3 Core Evaluation Pillars */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 bg-blue-50/40 rounded-xl border border-blue-100 space-y-1">
+                <span className="text-[11px] font-semibold text-blue-700 uppercase tracking-wide flex items-center gap-1.5">
+                  <Target size={13} />
+                  Goals & Deliverables
+                </span>
+                <div className="text-xl font-black text-slate-900">{weightDist.goals_and_kpis}%</div>
+                <p className="text-[11px] text-slate-500">Milestone deliverables, PR merges & task completion.</p>
+              </div>
+
+              <div className="p-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100 space-y-1">
+                <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide flex items-center gap-1.5">
+                  <UserCheck size={13} />
+                  Mentor Evaluation
+                </span>
+                <div className="text-xl font-black text-slate-900">{weightDist.manager_evaluation}%</div>
+                <p className="text-[11px] text-slate-500">Technical competence, code hygiene, and problem-solving.</p>
+              </div>
+
+              <div className="p-3.5 bg-amber-50/40 rounded-xl border border-amber-100 space-y-1">
+                <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide flex items-center gap-1.5">
+                  <User size={13} />
+                  Self-Assessment
+                </span>
+                <div className="text-xl font-black text-slate-900">{weightDist.self_assessment}%</div>
+                <p className="text-[11px] text-slate-500">Self-rating (1–10) & qualitative reflection questions.</p>
+              </div>
+            </div>
+
+            {/* Expandable Parameter List */}
+            {showWeightDetails && (
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                <span className="text-xs font-bold text-slate-700 block">
+                  Specific Evaluation Parameters Decided by HR:
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {evalParams.map((param: any, idx: number) => (
+                    <div key={param.id || idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-start justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-bold text-slate-800 block">{param.name}</span>
+                        <p className="text-[11px] text-slate-500 leading-snug">{param.description}</p>
+                      </div>
+                      <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-full shrink-0">
+                        {param.weight}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-[11.5px] text-indigo-900 flex items-center gap-2">
+                  <Sparkles size={15} className="text-indigo-600 shrink-0" />
+                  <span>
+                    Mathematical Scoring: Final Score = (Goals × {weightDist.goals_and_kpis}%) + (Mentor Review × {weightDist.manager_evaluation}%) + (Self-Rating × {weightDist.self_assessment}%)
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Upcoming Deadlines & Pending Tasks Tracker */}
@@ -1398,6 +1498,35 @@ const EmployeeDashboard: React.FC = () => {
                       {publishedFeedback.performanceClassification || 'Outstanding Contributor'}
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* HR Evaluation Parameters & Weightages Breakdown */}
+              <div className="p-5 border border-slate-200 rounded-2xl bg-white space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Target size={16} className="text-indigo-600" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      HR Evaluation Parameters & Weightage Breakdown:
+                    </h4>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    Component Weights: Goals ({weightDist.goals_and_kpis}%) • Mentor ({weightDist.manager_evaluation}%) • Self ({weightDist.self_assessment}%)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                  {evalParams.map((p: any, idx: number) => (
+                    <div key={p.id || idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-800 truncate">{p.name}</span>
+                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-full shrink-0">
+                          {p.weight}%
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 line-clamp-2">{p.description}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 

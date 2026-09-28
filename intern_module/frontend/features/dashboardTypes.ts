@@ -107,6 +107,36 @@ export interface DashboardTask {
   priority: string;
 }
 
+export interface ScoringWeightDistribution {
+  goals_and_kpis: number;
+  manager_evaluation: number;
+  self_assessment: number;
+}
+
+export interface EvaluationParameterItem {
+  id: string;
+  name: string;
+  description: string;
+  weight: number;
+  maximumScore: number;
+  isActive?: boolean;
+}
+
+export interface ScoringParametersResponse {
+  cycle?: {
+    id: string | null;
+    name: string;
+    status: string;
+  };
+  componentWeights: {
+    goalsWeight: number;
+    managerWeight: number;
+    selfWeight: number;
+    totalWeight: number;
+  };
+  evaluationParameters: EvaluationParameterItem[];
+}
+
 export interface InternScorecardResponse {
   totalGoals: number;
   completedGoals: number;
@@ -117,6 +147,8 @@ export interface InternScorecardResponse {
   activeAppraisalStatus?: string;
   publishedScore: number | null;
   performanceClassification?: string | null;
+  weightDistribution?: ScoringWeightDistribution;
+  evaluationParameters?: EvaluationParameterItem[];
 }
 
 export interface InternComment {
@@ -215,6 +247,9 @@ export interface InternPublishedResults {
   areasForImprovement: string[];
   publishedAt: string | null;
   reviewerName?: string;
+  weightDistribution?: ScoringWeightDistribution;
+  evaluationParameters?: EvaluationParameterItem[];
+  scoreBreakdown?: any;
 }
 
 export interface InternOverviewData {
@@ -254,6 +289,9 @@ export interface InternPublishedFeedbackData {
   mentorFeedback?: string;
   finalConclusion?: string;
   areasForImprovement?: string[];
+  weightDistribution?: ScoringWeightDistribution;
+  evaluationParameters?: EvaluationParameterItem[];
+  scoreBreakdown?: any;
   replies?: Array<{
     id: string;
     replyText: string;
