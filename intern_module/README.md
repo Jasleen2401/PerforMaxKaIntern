@@ -31,7 +31,7 @@ This directory consolidates all backend, frontend, documentation, migrations, da
 | 21 | **View Published Areas for Improvement** | ✅ Implemented | Dedicated recommendations panel highlighting mentor-guided technical growth areas |
 | 22 | **Reply to Mentor Comments on Published Feedback** | ✅ Implemented | Interactive feedback reply section allowing intern response to published evaluations |
 | 23 | **View Deadlines and Pending Tasks** | ✅ Implemented | Chronological deadlines tracker for tasks, goal milestones, and self-evaluation cutoff |
-| 24 | **Removed Unnecessary Features** | ✅ Cleaned | Eliminated confusing corporate PIP alert, 360 multi-rater, multi-year charts |
+| 24 | **Removed Unnecessary Features** | ✅ Cleaned | Eliminated confusing corporate PIP alerts, 360 multi-rater, 1-on-1 sync meetings, IDP plans, and multi-year charts |
 | 25 | **Flexible Performance Assessment Scoring** | ✅ Implemented | Dynamic HR evaluation parameters & weightages ($Goals\% + Manager\% + Self\% = 100\%$) |
 | 26 | **HR Scoring Parameters & Criteria Studio** | ✅ Implemented | Dedicated HR UI to configure custom parameters, weights, normalize, and live simulate scores |
 

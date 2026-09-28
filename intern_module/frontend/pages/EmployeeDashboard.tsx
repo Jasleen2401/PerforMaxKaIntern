@@ -158,7 +158,7 @@ const EmployeeDashboard: React.FC = () => {
     { id: '2', name: 'Problem Solving & Ownership', weight: 25, maximumScore: 100, description: 'Analytical approach, autonomy, root-cause fixes' },
     { id: '3', name: 'Code Quality & Testing', weight: 20, maximumScore: 100, description: 'Unit/integration testing, clean code conventions' },
     { id: '4', name: 'Collaboration & Communication', weight: 15, maximumScore: 100, description: 'Team syncs, PR reviews, documentation' },
-    { id: '5', name: 'Velocity & Timeliness', weight: 15, maximumScore: 100, description: 'Meeting milestone sprint deadlines reliably' },
+    { id: '5', name: 'Velocity & Timeliness', weight: 15, maximumScore: 100, description: 'Achieving milestone sprint deadlines reliably' },
   ];
 
   // Handlers
@@ -512,7 +512,7 @@ const EmployeeDashboard: React.FC = () => {
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500">Mentorship Sync & Code Reviews:</span>
+                <span className="text-xs text-slate-500">Mentor Guidance & Code Reviews:</span>
                 <button
                   onClick={() => setActiveTab('goals')}
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer"

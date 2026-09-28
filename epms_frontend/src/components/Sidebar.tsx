@@ -77,10 +77,10 @@ const Sidebar = ({ onClose }: SidebarProps) => {
     switch (item.label) {
       case "Performance Pulse":   return hasPermission("REPORT_VIEW_ALL");
       case "Team Pulse":          return hasPermission("APPRAISAL_VIEW_TEAM") && !isAdmin && !isHR;
-      case "Continuous Feedback": return true;
-      case "1-on-1 Sync Meetings":return true;
-      case "PIP Recovery Plans":  return hasPermission("PIP_VIEW_OWN") || hasPermission("PIP_CREATE");
-      case "IDP Development Plans": return true;
+      case "Continuous Feedback": return !isInternUser;
+      case "1-on-1 Sync Meetings":return !isInternUser;
+      case "PIP Recovery Plans":  return !isInternUser && (hasPermission("PIP_VIEW_OWN") || hasPermission("PIP_CREATE"));
+      case "IDP Development Plans": return !isInternUser;
       case "Strategic Analytics": return hasPermission("REPORT_VIEW_ALL");
       case "System Audit Logs":   return isAdmin || hasRole("AUDIT_VIEWER");
       default:                    return true;
