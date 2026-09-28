@@ -50,6 +50,22 @@ class PerformanceCycle(models.Model):
         help_text='Weight in percentage for Intern Self Assessment component (0-100)',
         validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('100.00'))]
     )
+    self_assessment_deadline = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Cutoff date for intern/employee self-appraisal submissions'
+    )
+    evidence_deadline = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Cutoff date for deliverables and evidence submissions'
+    )
+    current_phase = models.CharField(
+        max_length=50,
+        blank=True,
+        default='Active Evaluation',
+        help_text='Current cycle milestone phase label'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -148,6 +164,31 @@ class Appraisal(models.Model):
         db_index=True
     )
     overall_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    classification = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text='Published performance classification'
+    )
+    strengths = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of key evaluated strengths and accomplishments'
+    )
+    areas_for_improvement = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of actionable recommendations and growth focus areas'
+    )
+    recommendations = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Long-form development recommendations from reviewer/mentor'
+    )
+    allow_intern_reply = models.BooleanField(
+        default=True,
+        help_text='Whether the intern can submit replies to published feedback'
+    )
     self_comments = models.TextField(blank=True, null=True)
     reviewer_comments = models.TextField(blank=True, null=True)
     final_comments = models.TextField(blank=True, null=True)
