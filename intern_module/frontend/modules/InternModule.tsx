@@ -27,10 +27,10 @@ export const InternModule = () => {
           <p className="text-xs text-slate-500 mt-1">Personal performance score, KPI completion, and real-time task tracker.</p>
         </Link>
 
-        <Link to="/kpi/my" className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-amber-300 shadow-xs hover:shadow-md transition-all group">
+        <Link to="/dashboard" className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-amber-300 shadow-xs hover:shadow-md transition-all group">
           <Compass className="text-amber-500 mb-3" size={24} />
           <h3 className="font-semibold text-slate-900 group-hover:text-amber-600">My Goals & Progress</h3>
-          <p className="text-xs text-slate-500 mt-1">Log incremental progress, attach evidence links, and view target KPIs.</p>
+          <p className="text-xs text-slate-500 mt-1">Log incremental progress, attach evidence links, and reply to mentor notes.</p>
         </Link>
 
         <Link to="/appraisal" className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-amber-300 shadow-xs hover:shadow-md transition-all group">
