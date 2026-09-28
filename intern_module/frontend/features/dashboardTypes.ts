@@ -110,9 +110,23 @@ export interface DashboardTask {
 export interface InternScorecardResponse {
   totalGoals: number;
   completedGoals: number;
+  inProgressGoals?: number;
   averageProgress: number;
-  activeAppraisalStatus: string;
+  pendingTasksCount?: number;
+  upcomingDeadlinesCount?: number;
+  activeAppraisalStatus?: string;
   publishedScore: number | null;
+  performanceClassification?: string | null;
+}
+
+export interface InternComment {
+  id: string;
+  authorName: string;
+  authorRole: string;
+  comment: string;
+  isMentor: boolean;
+  createdAt: string;
+  parentId?: string | null;
 }
 
 export interface InternGoalItem {
@@ -121,11 +135,132 @@ export interface InternGoalItem {
   description: string;
   progress: number;
   completionPercentage: number;
+  weightage?: number;
   status: string;
   priority: string;
   dueDate: string | null;
   cycleName: string;
   assignedByName?: string | null;
+  comments?: InternComment[];
+  evidenceCount?: number;
+}
+
+export interface InternTaskItem {
+  id: string;
+  title: string;
+  category: string;
+  instructions: string;
+  priority: string;
+  dueDate: string;
+  isCompleted: boolean;
+  completedAt: string | null;
+  hoursSpent: number | null;
+  completionNotes: string;
+  artifactUrl: string;
+  isPermittedToComplete: boolean;
+  isOverdue: boolean;
+}
+
+export interface InternEvidenceItem {
+  id: string;
+  goalId: string | null;
+  goalTitle: string;
+  title: string;
+  description: string;
+  externalUrl: string;
+  fileAttachment: string | null;
+  fileName: string | null;
+  reviewStatus: 'PENDING' | 'APPROVED' | 'REVISION_REQUESTED';
+  reviewNotes: string;
+  reviewedBy: string | null;
+  createdAt: string;
+}
+
+export interface InternMentorInfo {
+  name: string;
+  email: string;
+  designation: string;
+  department: string;
+  avatar: string;
+  status: string;
+}
+
+export interface InternCycleInfo {
+  id: string | null;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  currentPhase: string;
+  daysRemaining: number;
+}
+
+export interface InternDeadlineItem {
+  id: string;
+  title: string;
+  type: 'TASK' | 'GOAL' | 'EVALUATION' | 'EVIDENCE';
+  dueDate: string;
+  daysLeft: number;
+  isUrgent: boolean;
+  status: string;
+}
+
+export interface InternPublishedResults {
+  isPublished: boolean;
+  overallScore: number | null;
+  classification: string | null;
+  reviewerComments: string | null;
+  finalComments: string | null;
+  areasForImprovement: string[];
+  publishedAt: string | null;
+  reviewerName?: string;
+}
+
+export interface InternOverviewData {
+  personalScorecard: InternScorecardResponse;
+  mentor: InternMentorInfo;
+  cycle: InternCycleInfo;
+  deadlines: InternDeadlineItem[];
+  publishedResults: InternPublishedResults;
+}
+
+export interface InternSelfAppraisalData {
+  isEnabled: boolean;
+  isSubmitted: boolean;
+  submittedAt: string | null;
+  selfRating: number;
+  achievements: string;
+  challenges: string;
+  skillsAcquired: string;
+  mentorshipNeeds: string;
+  reflectionSummary: string;
+  hrQuestions: Array<{
+    id: string;
+    category: string;
+    question: string;
+    placeholder: string;
+  }>;
+  cycleName: string;
+}
+
+export interface InternPublishedFeedbackData {
+  isPublished: boolean;
+  cycleName?: string;
+  overallScore?: number;
+  performanceClassification?: string;
+  publishedAt?: string;
+  mentorName?: string;
+  mentorFeedback?: string;
+  finalConclusion?: string;
+  areasForImprovement?: string[];
+  replies?: Array<{
+    id: string;
+    replyText: string;
+    createdAt: string;
+  }>;
+  isReplyPermitted?: boolean;
+  message?: string;
 }
 
 export interface InternAppraisalItem {

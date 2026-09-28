@@ -1,6 +1,37 @@
 # 🎓 Intern Module — Complete Deliverables & Source Files
 
-This directory consolidates all backend, frontend, documentation, and data-seeding files created for the **Intern Performance Management & Learning Module** in **PerforMax**.
+This directory consolidates all backend, frontend, documentation, migrations, data-seeding, and automated test files created for the **Intern Performance Management & Learning Module** in **PerforMax**.
+
+---
+
+## 🎯 23 Implemented Core Features Checklist
+
+| # | Feature Requirement | Status | Component & API Implementation |
+|---|---|---|---|
+| 1 | **View Personal Dashboard** | ✅ Implemented | Scorecard with goals, tasks, evaluation cycle, official score, and deadlines |
+| 2 | **View Assigned Mentor** | ✅ Implemented | Prominent Mentor Spotlight Card with name, email, designation, department, and active mentorship tag |
+| 3 | **View Current Evaluation Cycle** | ✅ Implemented | Active cycle banner with dates, status, current phase, and countdown days remaining |
+| 4 | **View Assigned Goals** | ✅ Implemented | KRAs/goals with title, description, weightage %, status, priority, and due dates |
+| 5 | **Update Goal Progress** | ✅ Implemented | Interactive real-time progress slider ($0–100\%$) with auto-completion at 100% |
+| 6 | **Add Comments to Goals** | ✅ Implemented | Expandable discussion thread under each goal for progress updates and notes |
+| 7 | **Reply to Mentor Comments where Permitted** | ✅ Implemented | Direct threaded reply to mentor notes on specific goals |
+| 8 | **Submit Evidence Against Goals** | ✅ Implemented | Evidence Submission Modal linked to target goals with deliverable description |
+| 9 | **Attach Files** | ✅ Implemented | File attachment input supporting document, code, and archive uploads |
+| 10 | **Add URLs** | ✅ Implemented | External URL input for GitHub PRs, Figma design specs, and commits |
+| 11 | **View Submitted Evidence** | ✅ Implemented | Evidence Hub listing submissions with mentor verification status and review notes |
+| 12 | **Complete Assigned Tasks** | ✅ Implemented | Assigned tasks list with status toggle and pending counter |
+| 13 | **View Task Instructions** | ✅ Implemented | Detailed step-by-step guidelines and acceptance criteria provided by mentor |
+| 14 | **Mark Work Complete where Permitted** | ✅ Implemented | Permission-checked completion action with audit record |
+| 15 | **Complete Date and Other Configured Fields** | ✅ Implemented | Form to record completion date, hours spent, summary notes, and deliverable URL |
+| 16 | **Complete Self-Rating when Enabled** | ✅ Implemented | Interactive 1.0 to 10.0 score selector with performance tier indicators |
+| 17 | **Fill HR-Published Forms/Questions** | ✅ Implemented | 5 structured reflection questions covering achievements, challenges, skills, mentorship, and goals |
+| 18 | **View Mentor Feedback that is Published** | ✅ Implemented | Confidentiality-shielded view revealing mentor qualitative remarks once published |
+| 19 | **View Published Ratings/Results** | ✅ Implemented | Official calibrated score (e.g. 94.0%) prominently displayed upon HR release |
+| 20 | **View Performance Classification when Published** | ✅ Implemented | Tier badge: *Outstanding Contributor*, *Exceeds Expectations*, *Meets Expectations*, etc. |
+| 21 | **View Published Areas for Improvement** | ✅ Implemented | Dedicated recommendations panel highlighting mentor-guided technical growth areas |
+| 22 | **Reply to Mentor Comments on Published Feedback** | ✅ Implemented | Interactive feedback reply section allowing intern response to published evaluations |
+| 23 | **View Deadlines and Pending Tasks** | ✅ Implemented | Chronological deadlines tracker for tasks, goal milestones, and self-evaluation cutoff |
+| 24 | **Removed Unnecessary Features** | ✅ Cleaned | Eliminated confusing corporate PIP alert, manager report downloads, and irrelevant multi-year trend charts |
 
 ---
 
@@ -8,31 +39,35 @@ This directory consolidates all backend, frontend, documentation, and data-seedi
 
 ```
 intern_module/
-├── README.md                                  # This documentation and file manifest
+├── README.md                                          # This documentation and feature manifest
+├── docs/
+│   └── INTERN_ARCHITECTURE.md                         # Complete architectural & API specification
 ├── backend/
 │   ├── apps/
 │   │   └── intern/
-│   │       ├── __init__.py                    # Module init
-│   │       ├── urls.py                        # Dedicated /api/intern/* route patterns
-│   │       └── views.py                       # REST API views with privacy gating & score calculation
-│   └── seed_scripts/
-│       ├── seed_intern_pms.py                 # Full DB seed: cycles, goals, criteria, evidence, appraisals
-│       └── seed_dailoqa_interns.py            # Intern accounts, batches (A, B, C, D), and credentials
-├── frontend/
-│   ├── modules/
-│   │   └── InternModule.tsx                   # Dedicated Intern Portal navigation hub
-│   ├── pages/
-│   │   └── EmployeeDashboard.tsx              # Interactive Intern & Employee scorecard dashboard
-│   ├── features/
-│   │   ├── dashboardApi.ts                    # RTK Query hooks for scorecard, goals, evidence, appraisals
-│   │   ├── dashboardTypes.ts                  # TypeScript definitions for intern API responses
-│   │   └── authApi.ts                         # Role & profile authentication endpoints
-│   ├── components/
-│   │   └── Sidebar.tsx                        # Role-aware sidebar navigation tailored for Intern role
-│   └── hooks/
-│       └── useAuth.ts                         # Client-side role resolution & permission checks
-└── docs/
-    └── INTERN_ARCHITECTURE.md                 # Complete architectural specification & API documentation
+│   │       ├── __init__.py                            # Module package init
+│   │       ├── models.py                              # InternTask, InternGoalComment, InternSelfAppraisal, InternFeedbackReply
+│   │       ├── migrations/
+│   │       │   └── 0001_initial.py                    # Applied database migration
+│   │       ├── urls.py                                # Dedicated /api/intern/* endpoints
+│   │       └── views.py                               # Comprehensive REST API views for all 23 features
+│   ├── seed_scripts/
+│   │   ├── seed_intern_pms.py                         # Full DB seed: cycles, goals, criteria, evidence, appraisals
+│   │   └── seed_dailoqa_interns.py                    # Intern accounts, batches, and credentials
+│   └── tests_intern_dashboard.py                      # 10 automated test cases verifying all 23 features
+└── frontend/
+    ├── modules/
+    │   └── InternModule.tsx                           # Dedicated Intern Portal navigation hub
+    ├── pages/
+    │   └── EmployeeDashboard.tsx                      # Focused, feature-complete Intern Dashboard (23 features)
+    ├── features/
+    │   ├── dashboardApi.ts                            # RTK Query hooks for overview, goals, tasks, evidence, appraisal
+    │   ├── dashboardTypes.ts                          # Comprehensive TypeScript definitions for all intern models
+    │   └── authApi.ts                                 # Profile and authentication endpoints
+    ├── components/
+    │   └── Sidebar.tsx                                # Role-aware sidebar navigation tailored for Intern role
+    └── hooks/
+        └── useAuth.ts                                 # Client-side role resolution & permission checks
 ```
 
 ---
@@ -43,24 +78,23 @@ The active source code runs within the project structure at:
 
 | Intern Module Component | Active Project Location | Purpose |
 |---|---|---|
-| **Backend Views** | `backend/apps/intern/views.py` | Implements `/scorecard/`, `/my-goals/`, `/my-goals/<id>/progress/`, `/evidence/submit/`, `/my-appraisals/` |
+| **Backend Models** | `backend/apps/intern/models.py` | Defines `InternTask`, `InternGoalComment`, `InternSelfAppraisalSubmission`, `InternFeedbackReply` |
+| **Backend Migrations** | `backend/apps/intern/migrations/` | Schema migration for intern database tables |
+| **Backend Views** | `backend/apps/intern/views.py` | Implements `/overview/`, `/my-goals/`, `/progress/`, `/comments/`, `/evidence/`, `/tasks/`, `/self-appraisal/`, `/published-feedback/` |
 | **Backend URLs** | `backend/apps/intern/urls.py` | Configures `intern` namespace under `/api/intern/` |
-| **PMS Database Seed** | `backend/seed_intern_pms.py` | Creates 80+ interns, managers, cycles, KPIs, and appraisals |
-| **Account Seed** | `backend/seed_dailoqa_interns.py` | Creates `@dailoqa.com` intern test accounts |
-| **Intern Portal View** | `epms_frontend/src/modules/intern/InternModule.tsx` | Hub with direct cards to Dashboard, Goals, Appraisals, and IDP |
-| **Scorecard Dashboard** | `epms_frontend/src/pages/EmployeeDashboard.tsx` | Live goal sliders ($0–100\%$), evidence submission modal, self-appraisals, and metrics |
+| **Automated Tests** | `backend/tests_intern_dashboard.py` | 10 comprehensive automated unit tests covering all features |
+| **Intern Dashboard Page** | `epms_frontend/src/pages/EmployeeDashboard.tsx` | Interactive React component with all 23 checklist features |
 | **API Integration** | `epms_frontend/src/features/dashboard/dashboardApi.ts` | RTK Query endpoints connected to `/api/intern/` |
-| **Data Types** | `epms_frontend/src/features/dashboard/dashboardTypes.ts` | Type definitions for `InternScorecard`, `InternGoal`, `InternAppraisal` |
-| **Architecture Spec** | `docs/INTERN_ARCHITECTURE.md` | Persona definition, privacy gating rules, database relationships |
+| **Data Types** | `epms_frontend/src/features/dashboard/dashboardTypes.ts` | TypeScript definitions for all intern models |
 
 ---
 
 ## 🔑 Demo Intern Credentials
 
-- **Demo Email:** `alex.dev@company.com` *(or any intern email such as `tanvi.sharma@dailoqa.com`)*
-- **Demo Password:** `AlexPassword123!` *(or lowercase first name: `tanvi`, `alex`, `jasleen`)*
+- **Demo Email:** `jasleen.kaur@dailoqa.com` *(or `alex.dev@company.com`)*
+- **Demo Password:** `jasleen` *(or `AlexPassword123!`)*
 - **OTP Passcode:** `123456` *(or ⚡ 1-Click Auto-Fill)*
-- **Assigned Role:** `INTERN` / `ROLE_INTERN`
+- **Assigned Mentor:** `Elena Rostova (QA Automation Lead)`
 
 ---
 
@@ -68,29 +102,28 @@ The active source code runs within the project structure at:
 
 | HTTP Method | Route | Description |
 |---|---|---|
-| `GET` | `/api/intern/scorecard/` | Returns total goals, completed count, average progress %, active appraisal status, published score |
-| `GET` | `/api/intern/my-goals/` | Retrieves all active assigned goals with weightage, cycle, and assigned manager |
-| `POST` | `/api/intern/my-goals/<uuid:pk>/progress/` | Real-time slider update ($0–100\%$) and automatic status update (`IN_PROGRESS` / `COMPLETED`) |
-| `POST` | `/api/intern/evidence/submit/` | Submits PR / Figma / report URLs with verification notes for assigned goals |
-| `GET` | `/api/intern/my-appraisals/` | Privacy-gated appraisals (masks unpublished manager ratings, reveals calibrated score when published) |
+| `GET` | `/api/intern/overview/` | Returns personal scorecard, assigned mentor info, active cycle, upcoming deadlines, and published results |
+| `GET` | `/api/intern/my-goals/` | Retrieves assigned goals with weightage, cycle, progress %, comment threads, and evidence count |
+| `POST` | `/api/intern/my-goals/<uuid:pk>/progress/` | Real-time progress update ($0–100\%$) with auto-completion status update |
+| `GET`, `POST` | `/api/intern/my-goals/<uuid:pk>/comments/` | Fetch goal comments and post new progress notes or reply to mentor comments |
+| `GET`, `POST` | `/api/intern/evidence/` & `/submit/` | View submitted evidence and submit new proof of work with file attachments and external URLs |
+| `GET` | `/api/intern/tasks/` | Retrieve assigned tasks with detailed step-by-step instructions from mentor |
+| `POST` | `/api/intern/tasks/<uuid:pk>/complete/` | Mark work complete where permitted; log completion date, hours spent, summary notes, and artifact URL |
+| `GET`, `POST` | `/api/intern/self-appraisal/` | Fill 1–10 self-rating and answer 5 HR-published reflection questions (save draft or submit final) |
+| `GET` | `/api/intern/published-feedback/` | Retrieve published mentor feedback, score, classification, and published improvement areas |
+| `POST` | `/api/intern/published-feedback/reply/` | Reply to mentor feedback where permitted |
 
 ---
 
-## 🚀 Running the Project
+## 🧪 Running Automated Tests
 
 ```bash
-# 1. Start Django Backend
+# Activate virtual environment
 cd backend
-python -m venv venv
-# Windows:
-.\venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
+.\.venv\Scripts\activate
 
-# 2. Start Frontend
-cd epms_frontend
-npm install
-npm run dev
+# Run the 10 automated test cases
+python manage.py test tests_intern_dashboard -v 2
 ```
-Open **`http://localhost:5173/`** and log in with the intern credentials.
+
+All 10 test cases run and pass with exit code 0 (`OK`).

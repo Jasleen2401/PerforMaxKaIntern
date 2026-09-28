@@ -6,68 +6,95 @@
 - **Role Identifier:** `INTERN` (with compatible roles `["INTERN", "EMPLOYEE"]`)
 - **Primary Persona:** Software Engineering Intern, Product Design Intern, QA Automation Intern
 - **Hierarchy Level:** Individual Contributor / Cohort Member (Batches A, B, C, D / Sub-Batches A1, A2, etc.)
-- **Scope of Control:** Self-scoped. Tracks assigned weighted goals, logs KPI progress, submits verifiable evidence (PR URLs, design links), completes self-assessments (1–10 scale), logs daily attendance, completes training curriculum, and views finalized published appraisal cards.
+- **Scope of Control:** Dedicated Intern Dashboard. Tracks assigned weighted goals, logs real-time goal progress with sliders, adds comments to goals and replies to mentor notes, attaches files and URLs for evidence verification, completes assigned tasks with instructions, fills 1–10 self-rating and HR questionnaire, and views published mentor feedback, calibrated score, performance classification, and improvement areas.
 
 ---
 
 ## 🔑 Login & Access Credentials
 | Field | Value |
 |---|---|
-| **Demo Intern Email** | `alex.dev@company.com` *(or any of the 80 `@dailoqa.com` intern emails)* |
-| **Password Pattern** | **First name in lowercase** (e.g., `alex`, `tanvi`, `jatin`, `jasleen`, `aryan`) |
-| **Demo Intern Password** | `AlexPassword123!` (for `alex.dev@company.com`) |
+| **Demo Intern Email** | `jasleen.kaur@dailoqa.com` *(or `alex.dev@company.com`)* |
+| **Password Pattern** | **First name in lowercase** (e.g., `jasleen`, `alex`, `tanvi`, `jatin`, `aryan`) |
+| **Demo Intern Password** | `jasleen` *(or `AlexPassword123!`)* |
 | **OTP Passcode** | **⚡ 1-Click Auto-Fill** / Universal: `123456` |
+| **Assigned Reporting Mentor** | `Elena Rostova` (QA Automation & Engineering Lead) |
 | **Permissions Assigned** | `["ROLE_INTERN", "ROLE_EMPLOYEE", "GOAL_VIEW_OWN", "EVIDENCE_SUBMIT", "APPRAISAL_SELF_EVALUATE"]` |
 
 ---
 
 ## 🖥️ Frontend Architecture & Navigation
 
-### 1. Dedicated Pages & Components
-| Route / Path | Component / File Location | Purpose & Capabilities |
+### 1. Dedicated Tabs & Features in `EmployeeDashboard.tsx`
+| Tab Identifier | Component / File Location | Capabilities & Scope |
 |---|---|---|
-| `/dashboard` | `src/pages/EmployeeDashboard.tsx` | Personal scorecard: Goal completion %, overall calibrated score, active cycle countdown, evidence submission feed, training progress. |
-| `/kpi/my` | `src/pages/kpi/MyKpiGoalsPage.tsx` | View all assigned goals & KPIs, update progress sliders ($0–100\%$), check assigned weights. |
-| `/kpi/history/:userId` | `src/pages/kpi/EmployeeKpiHistory.tsx` | Personal KPI Journey: historical progress charts across past cycles and batches. |
-| `/appraisal` | `src/pages/appraisals/AppraisalListPage.tsx` | Fill self-assessment ratings (1–10 scale) and qualitative summary; view final published score breakdown once cycle is released. |
-| `/continuous-feedback` | `src/pages/continuous/ContinuousFeedbackPage.tsx`| View feedback received from managers & peers; send peer recognition/feedback. |
-| `/meetings` | `src/pages/meetings/OneOnOneMeetingsPage.tsx` | View scheduled 1-on-1 syncs, meeting notes, and action items assigned by manager. |
-| `/idp` | `src/pages/idp/IdpManagementPage.tsx` | Personal Individual Development Plan: enroll in courses, mark learning milestones. |
-| `/360-feedback/pending` | `src/pages/feedback360/Feedback360PendingPage.tsx`| Fill anonymous multi-rater 360 feedback requested by peers. |
-| `/360-feedback/my-report` | `src/pages/feedback360/Feedback360ReportPage.tsx` | Personal 360 Feedback Report with radar chart comparing self vs peer vs manager scores. |
-
-### 2. Sidebar Navigation Items
-- **Core Intelligence:** Executive Dashboard, Performance Appraisals, Continuous Feedback, 1-on-1 Sync Meetings, PIP Recovery Plans (if on PIP), IDP Development Plans.
-- **360° Multi-Rater:** Pending 360 Reviews, My 360 Feedback Report.
-- **KRAs & Objectives:** KPI Intelligence Hub, My Goals & KRAs, My KPI Journey.
+| `overview` | `src/pages/EmployeeDashboard.tsx` | Personal scorecard, Assigned Mentor Spotlight, Active Evaluation Cycle with countdown, Deadlines & Pending Tracker, Published Results Card. |
+| `goals` | `src/pages/EmployeeDashboard.tsx` | View assigned goals with weightage, live progress slider ($0–100\%$), comments thread, reply to mentor comments, attach evidence shortcut. |
+| `tasks` | `src/pages/EmployeeDashboard.tsx` | View assigned tasks with mentor instructions, mark work complete where permitted, record completion date, hours spent, summary notes, and artifact URL. |
+| `evidence` | `src/pages/EmployeeDashboard.tsx` | Evidence Submission Hub: upload file attachments, add PR/Figma URLs, view mentor verification status and review feedback. |
+| `evaluation` | `src/pages/EmployeeDashboard.tsx` | Self-appraisal form: interactive 1.0–10.0 score selector, 5 HR-published reflection questions, draft save & final submission. |
+| `results` | `src/pages/EmployeeDashboard.tsx` | Published Results Hub: official calibrated score, performance classification badge, mentor qualitative remarks, published areas for improvement, reply to mentor comments. |
+| `profile` | `src/pages/EmployeeDashboard.tsx` | Account identity, department, cohort, employee code, and assigned mentor contact card. |
 
 ---
 
-## ⚙️ Backend Architecture & Endpoints
+## ⚙️ Backend Architecture & Database Models
 
-### 1. Core Models (`backend/apps/`)
-- `apps.goals.models.Goal`, `KPI`, `GoalProgress` (`employee_id` filter)
-- `apps.evidence.models.EvidenceSubmission` (`submitted_by` filter)
-- `apps.performance.models.Appraisal`, `AppraisalRating` (`employee_id` filter)
-- `apps.attendance.models.AttendanceRecord` (`employee_id`, `date`)
-- `apps.training.models.EmployeeTraining`, `TrainingCourse`
+### 1. Dedicated Intern App Models (`apps.intern.models`)
+- `InternTask`:
+  - `intern`: ForeignKey `EmployeeProfile`
+  - `title`: CharField
+  - `category`: Choice (`TECHNICAL`, `ONBOARDING`, `DOCUMENTATION`, `EVALUATION`)
+  - `instructions`: TextField (step-by-step mentor instructions and criteria)
+  - `priority`: Choice (`HIGH`, `MEDIUM`, `LOW`)
+  - `due_date`: DateField
+  - `is_completed`: BooleanField
+  - `completed_at`: DateField
+  - `hours_spent`: DecimalField
+  - `completion_notes`: TextField
+  - `artifact_url`: CharField
+  - `is_permitted_to_complete`: BooleanField
+- `InternGoalComment`:
+  - `goal`: ForeignKey `Goal`
+  - `author`: ForeignKey `User`
+  - `author_name`: CharField
+  - `author_role`: CharField (`INTERN` / `MENTOR`)
+  - `comment`: TextField
+  - `is_mentor`: BooleanField
+  - `parent`: ForeignKey `self` (hierarchical reply support)
+- `InternSelfAppraisalSubmission`:
+  - `intern`: ForeignKey `EmployeeProfile`
+  - `cycle`: ForeignKey `PerformanceCycle`
+  - `self_rating`: DecimalField (1.0 to 10.0)
+  - `achievements`: TextField (key technical deliverables)
+  - `challenges`: TextField (analytical obstacles overcome)
+  - `skills_acquired`: TextField (frameworks & tooling mastered)
+  - `mentorship_needs`: TextField (focus areas for next sprint)
+  - `reflection_summary`: TextField (overall self-evaluation reflection)
+  - `is_submitted`: BooleanField
+  - `submitted_at`: DateTimeField
+- `InternFeedbackReply`:
+  - `intern`: ForeignKey `EmployeeProfile`
+  - `appraisal`: ForeignKey `Appraisal`
+  - `reply_text`: TextField
+  - `created_at`: DateTimeField
 
-### 2. Dedicated API Endpoints
-| HTTP Method | URL Endpoint | Permissions Required | Action Summary |
+### 2. Dedicated API Endpoints (`backend/apps/intern/urls.py`)
+| HTTP Method | URL Endpoint | Auth Required | Action Summary |
 |---|---|---|---|
-| `GET` | `/api/dashboard/employee` | `ROLE_INTERN` / `ROLE_EMPLOYEE` | Personal summary: average score, goal completion %, active appraisal status. |
-| `GET` | `/api/goals/my-goals/` | `ROLE_INTERN` | Returns active goals assigned to current authenticated intern. |
-| `POST` | `/api/goals/{id}/progress/` | `ROLE_INTERN` | Update progress on a KPI with numerical value or percentage. |
-| `POST` | `/api/evidence/` | `ROLE_INTERN` | Submit evidence link (GitHub PR, Figma design, doc link) with description. |
-| `GET` | `/api/performance/appraisals/my-appraisals/` | `ROLE_INTERN` | Returns intern's appraisals across cycles. |
-| `POST` | `/api/performance/appraisals/{id}/submit-self/` | `ROLE_INTERN` | Submit self-ratings (1–10 scale) and self-evaluation comments. |
-| `POST` | `/api/attendance/punch/` | `ROLE_INTERN` | Log daily attendance check-in. |
-| `POST` | `/api/training/courses/{id}/progress/` | `ROLE_INTERN` | Update course completion percentage. |
+| `GET` | `/api/intern/overview/` | Bearer Token | Personal scorecard, mentor info, cycle info, upcoming deadlines, published results. |
+| `GET` | `/api/intern/my-goals/` | Bearer Token | Assigned goals with weightage, priority, due date, progress %, comments, and evidence count. |
+| `POST` | `/api/intern/my-goals/<uuid:pk>/progress/` | Bearer Token | Update goal progress ($0–100\%$) real-time; auto-completes at 100%. |
+| `GET`, `POST` | `/api/intern/my-goals/<uuid:pk>/comments/` | Bearer Token | View comments on goal; add update note or reply to mentor comments. |
+| `GET`, `POST` | `/api/intern/evidence/` & `/submit/` | Bearer Token | View submitted evidence; submit new proof of work with file attachments and external URLs. |
+| `GET` | `/api/intern/tasks/` | Bearer Token | Retrieve assigned tasks with step-by-step mentor instructions. |
+| `POST` | `/api/intern/tasks/<uuid:pk>/complete/` | Bearer Token | Mark work complete where permitted; log completion date, hours, notes, and artifact URL. |
+| `GET`, `POST` | `/api/intern/self-appraisal/` | Bearer Token | Fill self-rating (1–10) and answer 5 HR reflection questions (draft / final submit). |
+| `GET` | `/api/intern/published-feedback/` | Bearer Token | Retrieve published mentor feedback, calibrated score, classification, and improvement areas. |
+| `POST` | `/api/intern/published-feedback/reply/` | Bearer Token | Submit reply to mentor feedback where permitted. |
 
 ---
 
-## 🔒 Security, Privacy & Invariants
-- **Strict Self-Data Isolation:** Interns can only read and mutate their own goals, evidence, self-assessments, and attendance.
-- **Mathematical Scoring Transparent Formula:**
-  $$\text{Final Score} = (\text{Goal Score} \times 0.40) + (\text{Manager Criteria Score} \times 0.40) + (\text{Self Criteria Score} \times 0.20)$$
-- **Privacy Shield:** Manager ratings, manager comments, and final calibrated score fields remain masked and unreturned by the API until the cycle state is explicitly `PUBLISHED` by HR.
+## 🛡️ Privacy & Confidentiality Safeguards
+1. **Uncalibrated Ratings Masked**: Interns cannot view draft or uncalibrated manager evaluations before HR approves and marks the cycle as `PUBLISHED`.
+2. **Anti-Enumeration & Scoping**: All queries are automatically scoped to the authenticated intern (`employee=profile`), preventing horizontal privilege escalation.
+3. **Audit Trail**: Every progress change, comment, task completion, and evidence submission records timestamp, user identity, and completion parameters.
